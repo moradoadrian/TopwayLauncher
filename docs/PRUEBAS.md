@@ -37,8 +37,8 @@ ADB está en `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`.
 3. Si no hay opciones de desarrollador accesibles → método B.
 
 > El menú *Acerca del dispositivo* de algunas radios muestra una versión de Android
-> distinta a la real. La versión fiable es la que muestra TopwayLauncher en su línea de
-> diagnóstico (lee `Build.VERSION`) o `getprop` por ADB.
+> distinta a la real. La versión fiable es la que muestra TopwayLauncher al mantener
+> pulsada la hora (lee `Build.VERSION`), o `getprop` por ADB.
 
 ### A.3 Emparejar y conectar (Android 11+)
 
@@ -129,10 +129,14 @@ se sube al repositorio.
 
 ### B.4 Qué anotar en la primera prueba
 
-- La línea inferior izquierda de TopwayLauncher: versión de Android, API, resolución,
-  densidad, fabricante, modelo y placa. Una foto basta.
-- Si la lista de aplicaciones aparece completa y si abrir una app funciona.
-- Si el reloj muestra la hora y la fecha correctas.
+- **Mantener pulsada la hora** de la cabecera: se abre *Información del equipo* con
+  la versión de Android, API, resolución, densidad, modelo y placa. Una foto basta.
+- Si aparecen todas las apps de la radio (radio FM, Bluetooth, música…) y si abrirlas funciona.
+- Si el botón **Ajustes** de la barra lateral abre los Ajustes de la radio. Es imprescindible antes
+  de activar el modo launcher.
+- Qué dicen las tarjetas **Navegación** y **Música** (por ejemplo, «Abrir Google Maps» o
+  «Google Maps no está instalado») y si al tocarlas se abre la app correcta.
+- Si la hora y la fecha son correctas, y si los iconos se ven de un tamaño cómodo.
 
 ### B.5 Desinstalar
 

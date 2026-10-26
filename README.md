@@ -9,15 +9,28 @@ distancia y sin depender de root ni de API privadas.
 
 ## Características actuales
 
-- Reloj y fecha grandes, en el idioma y formato (12/24 h) del sistema.
-- Cuadrícula adaptable de aplicaciones instaladas, ordenadas alfabéticamente
-  (sin distinguir mayúsculas ni acentos).
-- Diseño oscuro; reloj a la izquierda en horizontal y arriba en vertical.
+- Interfaz multimedia horizontal, minimalista y monocromática, inspirada en la organización
+  de CarPlay (sin copiar su interfaz ni usar recursos de Apple):
+  - **Barra lateral** (~10 % del ancho) con iconos monocromáticos: Inicio, Mapas, Música,
+    Apps y, separado abajo, **Ajustes**. La sección activa se marca con un paso de tono.
+  - **Cabecera** con hora y fecha.
+  - **Tarjeta de Navegación** protagonista: abre **Google Maps** con su URL pública de mapa
+    (sin destino, sin navegación giro a giro, sin API key y sin permisos de ubicación). Si
+    Maps no está instalado, usa la app de mapas predeterminada; si no hay ninguna, lo indica.
+  - **Tarjeta de Música**: abre la app de música predeterminada del sistema. No muestra
+    canciones ni carátulas (ver limitaciones).
+  - **Accesos rápidos**: apps recientes (o, al principio, las predeterminadas), solo las que
+    caben enteras, y el acceso **Todas** a la lista completa.
+  - **Sección Apps**: todas las apps en páginas que se deslizan; columnas, filas y tamaño
+    de icono según la pantalla real. Atrás vuelve a Inicio.
+  - Paleta grafito centralizada en `ui/theme/Theme.kt`; el color lo ponen los iconos de las apps.
+- Apps ordenadas alfabéticamente (sin distinguir mayúsculas ni acentos).
+- Respuesta táctil al pulsar (iconos y tarjetas se encogen ligeramente).
 - Estados de carga, lista vacía y error con botón *Reintentar*.
-- Aviso si una aplicación no se puede abrir.
+- Aviso si una aplicación, Maps, la app de música o Ajustes no se pueden abrir.
 - La lista se actualiza al volver a la pantalla (apps instaladas/desinstaladas).
-- Línea de diagnóstico: versión real de Android, API, resolución, densidad, fabricante,
-  modelo y placa (útil para confirmar las especificaciones de la radio sin ADB).
+- **Información del equipo** al mantener pulsada la hora: versión real de Android, API,
+  resolución, densidad, modelo y placa (para confirmar las especificaciones de la radio sin ADB).
 - Modo launcher **preparado y desactivado** (ver [docs/MODO_LAUNCHER.md](docs/MODO_LAUNCHER.md)).
 - **Sin permisos** de usuario.
 
@@ -51,12 +64,16 @@ app/src/main/java/com/morado/topwaylauncher/
 ├── data/
 │   ├── AppInfo.kt               Modelos (AppInfo, LauncherApp)
 │   ├── AppListRules.kt          Filtrado/orden puro (con pruebas)
-│   ├── AppRepository.kt         Consulta y apertura de apps (PackageManager)
+│   ├── DockRules.kt             Reglas del dock y recientes (con pruebas)
+│   ├── RecentAppsStore.kt       Apps recientes guardadas localmente
+│   ├── AppRepository.kt         Apps, Google Maps, música y Ajustes (API públicas)
+│   ├── ExternalShortcut.kt      Acceso verificado a una app externa
 │   └── DeviceInfo.kt            Datos del equipo para diagnóstico
 └── ui/
-    ├── home/                    HomeScreen + HomeViewModel (estados)
-    ├── components/              ClockPanel, AppGrid
-    └── theme/                   Tema oscuro
+    ├── home/                    HomeScreen, DashboardContent, AppsContent, HomeViewModel
+    ├── components/              NavRail, ClockHeader, AppPager, AppIcon
+    └── theme/                   Paleta, dimensiones y tipografía
+res/drawable/ic_nav_*.xml        Iconos monocromáticos propios (sin dependencias)
 docs/
 ├── PRUEBAS.md                   ADB por Wi-Fi e instalación por USB
 └── MODO_LAUNCHER.md             Activar / revertir el modo launcher
@@ -78,6 +95,22 @@ Pruebas y análisis:
 
 En Linux/macOS usar `./gradlew`. Al abrir el proyecto, Android Studio crea `local.properties`
 con la ruta del SDK (no se versiona).
+
+## Ejecutar en el emulador desde Android Studio
+
+1. **File → Open** y elegir la carpeta `TopwayLauncher`; esperar a que termine la
+   sincronización de Gradle.
+2. En **Device Manager**, iniciar un emulador. Sirve cualquier imagen con Google Play (trae
+   Google Maps y YouTube Music, que permiten probar las tarjetas). Rotarlo a **horizontal**
+   con los botones de rotación de la barra del emulador; no hace falta cambiar ajustes.
+3. Elegir la configuración **app** y pulsar **Run ▶**. La app se instala y se abre como una
+   app normal (no reemplaza el launcher del emulador).
+4. Para ver el diseño en otras proporciones, redimensionar la ventana del emulador o usar
+   otro perfil de dispositivo (por ejemplo, una tablet de 10" en horizontal).
+
+Si el emulador deja de responder a los toques o la captura de pantalla sale negra tras
+muchos reinicios de la app, reiniciar el emulador (*Cold Boot*) suele resolverlo: en las
+pruebas ocurrió por un bloqueo del launcher de Pixel del propio emulador, no de esta app.
 
 ## Pruebas en la radio
 
@@ -103,9 +136,19 @@ reporta errores.
 **Limitaciones del prototipo:**
 
 - No reemplaza el launcher del sistema.
-- Sin widgets, búsqueda, favoritos, carpetas ni reordenación de iconos.
+- **La tarjeta de Música no muestra qué suena ni controla la reproducción.** Leer las
+  sesiones multimedia de otras apps requiere que el usuario conceda el permiso especial de
+  *acceso a notificaciones*; queda como mejora futura y opcional.
+- **Mapas y Música dependen de las apps predeterminadas** del sistema. Si la radio no tiene
+  una app de música elegida (o sus apps de fábrica no se declaran como tales), la tarjeta
+  ofrece elegirla desde la lista de apps.
+- La tarjeta de Navegación es un acceso directo: no hay mapa integrado (no se usa ningún SDK).
+- La cabecera no muestra información contextual (clima, conexión); el espacio está libre.
+- Sin widgets, búsqueda, favoritos fijados, carpetas ni reordenación de iconos.
 - La lista de apps se refresca al volver a la pantalla, no en tiempo real.
 - No se integra con funciones propias de la radio (MCU, FM, cámara, controles de volante).
+- El emulador (Android 15, API 35) no reproduce el sistema de la Topway: versión de Android,
+  rendimiento, resolución y apps de fábrica pueden ser distintos.
 
 ## Cómo contribuir
 

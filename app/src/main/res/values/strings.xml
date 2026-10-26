@@ -1,10 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TopwayLauncher</string>
+
+    <!-- Barra lateral -->
+    <string name="rail_home">Inicio</string>
+    <string name="rail_navigation">Mapas</string>
+    <string name="rail_music">Música</string>
+    <string name="rail_apps">Apps</string>
+    <string name="rail_settings">Ajustes</string>
+
+    <!-- Tarjeta de navegación -->
+    <string name="nav_title">Navegación</string>
+    <string name="nav_open_google_maps">Abrir Google Maps</string>
+    <string name="nav_open_app">Abrir %1$s</string>
+    <string name="nav_unavailable">Google Maps no está instalado</string>
+    <string name="maps_unavailable_message">Google Maps no está instalado y no hay otra app de mapas predeterminada.</string>
+
+    <!-- Tarjeta de música -->
+    <string name="media_title">Música</string>
+    <string name="media_unavailable">Sin datos de reproducción</string>
+    <string name="media_open">Abrir %1$s</string>
+    <string name="media_choose">Elegir app de música</string>
+    <string name="music_unavailable_message">No hay una app de música predeterminada. Elige una en la lista.</string>
+
+    <!-- Accesos rápidos y lista de apps -->
+    <string name="quick_empty">Las apps que abras aparecerán aquí.</string>
+    <string name="quick_all">Todas</string>
     <string name="apps_title">Aplicaciones</string>
+    <plurals name="apps_count">
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
     <string name="apps_loading">Cargando aplicaciones…</string>
     <string name="apps_empty">No se encontraron aplicaciones para mostrar.</string>
     <string name="apps_error">No se pudo obtener la lista de aplicaciones.</string>
     <string name="retry">Reintentar</string>
     <string name="launch_error">No se pudo abrir %1$s</string>
+    <string name="settings_error">No se pudo abrir Ajustes.</string>
+    <string name="page_indicator">Página %1$d de %2$d</string>
+
+    <!-- Información del equipo -->
+    <string name="close">Cerrar</string>
+    <string name="device_info_title">Información del equipo</string>
+    <string name="device_info_android">Android</string>
+    <string name="device_info_screen">Pantalla</string>
+    <string name="device_info_model">Modelo</string>
+    <string name="device_info_board">Placa</string>
 </resources>

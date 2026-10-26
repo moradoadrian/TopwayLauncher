@@ -11,6 +11,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Google Maps: para comprobar si puede abrir su URL pública antes de lanzarla. -->
+        <package android:name="com.google.android.apps.maps" />
     </queries>
 
     <application

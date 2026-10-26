@@ -19,10 +19,6 @@ data class DeviceInfo(
     val heightPx: Int,
     val densityDpi: Int,
 ) {
-    fun summary(): String =
-        "Android $androidRelease (API $sdkInt) · ${widthPx}×$heightPx px · $densityDpi dpi · " +
-            "$manufacturer $model · $board"
-
     companion object {
         fun read(context: Context): DeviceInfo {
             val windowManager = context.getSystemService(WindowManager::class.java)
