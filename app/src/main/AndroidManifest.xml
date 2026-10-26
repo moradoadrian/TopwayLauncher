@@ -58,5 +58,22 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity-alias>
+
+        <!--
+            Lo que suena (OPCIONAL). No es un permiso que se pida al instalar: el usuario decide
+            si concede el "acceso a notificaciones" desde Ajustes, y puede retirarlo. Con él,
+            la tarjeta de música lee las sesiones multimedia públicas de otras apps. El servicio
+            está vacío: no lee ni guarda notificaciones. BIND_NOTIFICATION_LISTENER_SERVICE
+            garantiza que solo el sistema pueda conectarse a él.
+        -->
+        <service
+            android:name=".data.MediaListenerService"
+            android:exported="true"
+            android:label="@string/media_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

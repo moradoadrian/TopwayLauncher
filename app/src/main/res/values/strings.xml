@@ -22,6 +22,21 @@
     <string name="media_open">Abrir %1$s</string>
     <string name="media_choose">Elegir app de música</string>
     <string name="music_unavailable_message">No hay una app de música predeterminada. Elige una en la lista.</string>
+    <string name="media_idle">No se está reproduciendo nada</string>
+    <string name="media_untitled">Reproduciendo</string>
+    <string name="media_play">Reproducir</string>
+    <string name="media_pause">Pausar</string>
+    <string name="media_previous">Anterior</string>
+    <string name="media_next">Siguiente</string>
+
+    <!-- Acceso a lo que suena (opcional) -->
+    <string name="media_listener_label">Lo que suena en la tarjeta de música</string>
+    <string name="media_enable">Mostrar lo que suena</string>
+    <string name="media_access_title">Mostrar lo que suena</string>
+    <string name="media_access_message">Para mostrar la canción y controlarla, Android pide el acceso a notificaciones. Solo se usa para leer qué reproduce la app de música: tus notificaciones no se leen, guardan ni envían. Puedes retirarlo en Ajustes.</string>
+    <string name="media_access_continue">Ir a Ajustes</string>
+    <string name="media_access_cancel">Ahora no</string>
+    <string name="media_access_error">No se pudo abrir el ajuste de acceso a notificaciones.</string>
 
     <!-- Accesos rápidos y lista de apps -->
     <string name="quick_empty">Las apps que abras aparecerán aquí.</string>

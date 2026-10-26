@@ -70,6 +70,33 @@ class AppRepository(context: Context) {
         defaultAppShortcut(Intent.CATEGORY_APP_MUSIC)
     }
 
+    /** Pantalla principal de [pkg] con su nombre e icono, o null si no tiene una abrible. */
+    suspend fun appShortcut(pkg: String): ExternalShortcut? = withContext(Dispatchers.IO) {
+        packageManager.getLaunchIntentForPackage(pkg)?.let { shortcutFor(pkg, it) }
+    }
+
+    /** true si el sistema tiene la pantalla donde se concede el acceso a notificaciones. */
+    fun canOpenNotificationAccess(): Boolean = notificationAccessIntent() != null
+
+    /** Abre la pantalla del sistema donde el usuario concede o retira el acceso a notificaciones. */
+    fun openNotificationAccess(): Boolean = notificationAccessIntent()?.let(::start) ?: false
+
+    /**
+     * En Android 11+ se intenta ir directo al interruptor de esta app; si el fabricante no
+     * incluye esa pantalla, a la lista general de acceso a notificaciones.
+     */
+    private fun notificationAccessIntent(): Intent? {
+        val listener = ComponentName(appContext, MediaListenerService::class.java)
+        val detail = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+                .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, listener.flattenToString())
+        } else {
+            null
+        }
+        return listOfNotNull(detail, Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            .firstOrNull { resolve(it) != null }
+    }
+
     /** Abre la actividad con un intent explícito público. Devuelve false si no se pudo. */
     fun launch(app: AppInfo): Boolean = start(
         Intent(Intent.ACTION_MAIN)

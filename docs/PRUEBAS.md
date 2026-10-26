@@ -137,10 +137,23 @@ se sube al repositorio.
 - Qué dicen las tarjetas **Navegación** y **Música** (por ejemplo, «Abrir Google Maps» o
   «Google Maps no está instalado») y si al tocarlas se abre la app correcta.
 - Si la hora y la fecha son correctas, y si los iconos se ven de un tamaño cómodo.
+- **Lo que suena (opcional):** si aparece el botón **Mostrar lo que suena** y si al tocarlo
+  se abre el ajuste de acceso a notificaciones. Solo si el propietario decide activarlo:
+  reproducir algo (radio, Bluetooth, USB, una app) y anotar con qué fuentes la tarjeta muestra
+  título y controles, y con cuáles no.
+
+#### Si el ajuste aparece como «restringido» (Android 13+)
+
+Android bloquea el acceso a notificaciones de las apps instaladas desde un archivo. Para
+permitirlo (es un ajuste del usuario, reversible): *Ajustes → Aplicaciones → TopwayLauncher →
+menú ⋮ → Permitir ajustes restringidos*, y volver a intentarlo. Si ese menú no existe o el
+interruptor está desactivado y no se puede cambiar, la radio no lo permite: la tarjeta sigue
+funcionando como acceso directo.
 
 ### B.5 Desinstalar
 
-*Ajustes → Aplicaciones → TopwayLauncher → Desinstalar*.
+*Ajustes → Aplicaciones → TopwayLauncher → Desinstalar*. Al desinstalar, Android retira
+también el acceso a notificaciones si se había concedido.
 
 ---
 

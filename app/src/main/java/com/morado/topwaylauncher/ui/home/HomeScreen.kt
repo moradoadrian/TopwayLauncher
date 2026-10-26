@@ -2,6 +2,8 @@ package com.morado.topwaylauncher.ui.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -17,10 +19,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +57,7 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
     var section by rememberSaveable { mutableStateOf(HomeSection.Dashboard) }
+    var showMediaAccess by rememberSaveable { mutableStateOf(false) }
 
     // Recarga al volver a primer plano: recoge apps instaladas o desinstaladas mientras tanto.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
@@ -82,7 +89,9 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
         }
     }
     val onMusic = {
-        val music = uiState.music
+        // Si se sabe qué app está sonando se abre esa; si no, la de música predeterminada.
+        val playing = (uiState.nowPlaying as? NowPlayingUiState.Active)?.app
+        val music = playing ?: uiState.music
         when {
             music == null -> {
                 // Sin app predeterminada no hay nada que abrir: se lleva al usuario a elegir una.
@@ -96,6 +105,16 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
         }
     }
 
+    if (showMediaAccess) {
+        MediaAccessDialog(
+            onConfirm = {
+                showMediaAccess = false
+                if (!viewModel.openMediaAccess()) showMessage(resources.getString(R.string.media_access_error))
+            },
+            onDismiss = { showMediaAccess = false },
+        )
+    }
+
     HomeScreen(
         state = uiState,
         section = section,
@@ -103,12 +122,44 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
         onHome = { section = HomeSection.Dashboard },
         onNavigation = onNavigation,
         onMusic = onMusic,
+        media = MediaActions(
+            onOpen = onMusic,
+            onEnableAccess = { showMediaAccess = true },
+            onPlayPause = viewModel::playPause,
+            onPrevious = viewModel::skipPrevious,
+            onNext = viewModel::skipNext,
+        ),
         onApps = { section = HomeSection.Apps },
         onSettings = {
             if (!viewModel.openSettings()) showMessage(resources.getString(R.string.settings_error))
         },
         onRetry = viewModel::refresh,
         onAppClick = onAppClick,
+    )
+}
+
+/**
+ * Explica qué implica el acceso a notificaciones antes de llevar al usuario a Ajustes, donde
+ * Android muestra su propio aviso. Así la decisión se toma sabiendo para qué se usa.
+ */
+@Composable
+private fun MediaAccessDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.media_access_continue), color = TopwayPalette.Selected)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.media_access_cancel), color = TopwayPalette.TextSecondary)
+            }
+        },
+        title = { Text(stringResource(R.string.media_access_title)) },
+        // Desplazable: en pantallas de coche muy bajas el texto podría no caber.
+        text = { Text(stringResource(R.string.media_access_message), Modifier.verticalScroll(rememberScrollState())) },
+        containerColor = TopwayPalette.PanelRaised,
     )
 }
 
@@ -120,6 +171,7 @@ fun HomeScreen(
     onHome: () -> Unit,
     onNavigation: () -> Unit,
     onMusic: () -> Unit,
+    media: MediaActions,
     onApps: () -> Unit,
     onSettings: () -> Unit,
     onRetry: () -> Unit,
@@ -179,7 +231,7 @@ fun HomeScreen(
                         HomeSection.Dashboard -> DashboardContent(
                             state = state,
                             onNavigation = onNavigation,
-                            onMusic = onMusic,
+                            media = media,
                             onAppClick = onAppClick,
                             onShowAllApps = onApps,
                             modifier = contentModifier,

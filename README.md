@@ -17,8 +17,10 @@ distancia y sin depender de root ni de API privadas.
   - **Tarjeta de Navegación** protagonista: abre **Google Maps** con su URL pública de mapa
     (sin destino, sin navegación giro a giro, sin API key y sin permisos de ubicación). Si
     Maps no está instalado, usa la app de mapas predeterminada; si no hay ninguna, lo indica.
-  - **Tarjeta de Música**: abre la app de música predeterminada del sistema. No muestra
-    canciones ni carátulas (ver limitaciones).
+  - **Tarjeta de Música**: si el usuario lo permite, muestra lo que suena (app, título,
+    artista y carátula, tal como los publica la app de música) con los controles anterior,
+    reproducir/pausar y siguiente. Si no lo permite, o no suena nada, abre la app de música
+    predeterminada. Tocar la tarjeta abre la app que está sonando.
   - **Accesos rápidos**: apps recientes (o, al principio, las predeterminadas), solo las que
     caben enteras, y el acceso **Todas** a la lista completa.
   - **Sección Apps**: todas las apps en páginas que se deslizan; columnas, filas y tamaño
@@ -32,7 +34,22 @@ distancia y sin depender de root ni de API privadas.
 - **Información del equipo** al mantener pulsada la hora: versión real de Android, API,
   resolución, densidad, modelo y placa (para confirmar las especificaciones de la radio sin ADB).
 - Modo launcher **preparado y desactivado** (ver [docs/MODO_LAUNCHER.md](docs/MODO_LAUNCHER.md)).
-- **Sin permisos** de usuario.
+- **Sin permisos** que se pidan al instalar. El único acceso es opcional (ver abajo).
+
+### Mostrar lo que suena (opcional)
+
+Leer qué reproduce otra app exige que el usuario dé a TopwayLauncher el **acceso a
+notificaciones**. Es una decisión del usuario, no se activa sola:
+
+1. En la tarjeta de Música, tocar **Mostrar lo que suena**. Un diálogo explica para qué se usa.
+2. **Ir a Ajustes** abre la pantalla del sistema; ahí se activa el interruptor de TopwayLauncher
+   y se confirma el aviso de Android.
+3. Al volver, la tarjeta muestra lo que suena.
+
+El servicio que lo hace posible (`MediaListenerService`) está vacío: no lee, guarda ni envía
+notificaciones; solo habilita la API pública de sesiones multimedia (`MediaSessionManager`).
+Para retirarlo: *Ajustes → Notificaciones → Acceso a notificaciones* (el nombre varía según
+el fabricante) y desactivar TopwayLauncher. La tarjeta vuelve a ser un acceso directo.
 
 ## Tecnologías
 
@@ -68,6 +85,9 @@ app/src/main/java/com/morado/topwaylauncher/
 │   ├── RecentAppsStore.kt       Apps recientes guardadas localmente
 │   ├── AppRepository.kt         Apps, Google Maps, música y Ajustes (API públicas)
 │   ├── ExternalShortcut.kt      Acceso verificado a una app externa
+│   ├── MediaSessionRepository.kt  Lo que suena y sus controles (sesiones multimedia)
+│   ├── MediaListenerService.kt  Servicio vacío que habilita esa lectura
+│   ├── NowPlaying.kt            Modelo y regla de qué sesión mostrar (con pruebas)
 │   └── DeviceInfo.kt            Datos del equipo para diagnóstico
 └── ui/
     ├── home/                    HomeScreen, DashboardContent, AppsContent, HomeViewModel
@@ -136,9 +156,16 @@ reporta errores.
 **Limitaciones del prototipo:**
 
 - No reemplaza el launcher del sistema.
-- **La tarjeta de Música no muestra qué suena ni controla la reproducción.** Leer las
-  sesiones multimedia de otras apps requiere que el usuario conceda el permiso especial de
-  *acceso a notificaciones*; queda como mejora futura y opcional.
+- **Lo que suena depende de la app de música.** Solo aparecen las apps que publican una
+  sesión multimedia estándar (YouTube Music, Spotify y la mayoría de reproductores). Las apps
+  de fábrica de la radio (FM, Bluetooth, USB) pueden no hacerlo; si es así, la tarjeta sigue
+  siendo un acceso directo. Probado solo en el emulador.
+- **El acceso a notificaciones puede no estar disponible en la radio.** En equipos marcados
+  como de poca memoria Android lo bloquea, y algunos fabricantes ocultan esa pantalla (en ese
+  caso el botón no aparece). En Android 13+ las apps instaladas desde un archivo APK pueden
+  tener este ajuste *restringido*: ver [docs/PRUEBAS.md](docs/PRUEBAS.md).
+- Si se retira el acceso con la pantalla de inicio abierta (por ejemplo, por ADB), la
+  tarjeta lo refleja al volver a ella.
 - **Mapas y Música dependen de las apps predeterminadas** del sistema. Si la radio no tiene
   una app de música elegida (o sus apps de fábrica no se declaran como tales), la tarjeta
   ofrece elegirla desde la lista de apps.

@@ -24,7 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -34,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.morado.topwaylauncher.R
 import com.morado.topwaylauncher.data.ExternalShortcut
 import com.morado.topwaylauncher.data.LauncherApp
+import com.morado.topwaylauncher.data.NowPlaying
 import com.morado.topwaylauncher.ui.components.AppIcon
 import com.morado.topwaylauncher.ui.components.CARD_PRESSED_SCALE
 import com.morado.topwaylauncher.ui.components.Pressable
@@ -47,6 +51,22 @@ private val QuickPanelMinHeight = 92.dp
 private val QuickPanelMaxHeight = 128.dp
 private val QuickLabelSpace = 26.dp
 
+/** Altura a partir de la cual la tarjeta de música muestra la carátula y dos acciones. */
+private val MediaRoomyHeight = 172.dp
+private val MediaActionMinHeight = 112.dp
+private const val DISABLED_ALPHA = 0.3f
+
+/** Acciones de la tarjeta de música. */
+class MediaActions(
+    /** Abre la app que suena, o la de música predeterminada. */
+    val onOpen: () -> Unit,
+    /** Explica y lleva al ajuste de acceso a notificaciones. */
+    val onEnableAccess: () -> Unit,
+    val onPlayPause: () -> Unit,
+    val onPrevious: () -> Unit,
+    val onNext: () -> Unit,
+)
+
 /**
  * Pantalla de inicio: tarjeta de navegación, tarjeta de música y accesos rápidos.
  * Todas las medidas salen del espacio disponible (sin posiciones absolutas).
@@ -55,7 +75,7 @@ private val QuickLabelSpace = 26.dp
 fun DashboardContent(
     state: HomeUiState,
     onNavigation: () -> Unit,
-    onMusic: () -> Unit,
+    media: MediaActions,
     onAppClick: (LauncherApp) -> Unit,
     onShowAllApps: () -> Unit,
     modifier: Modifier = Modifier,
@@ -72,11 +92,11 @@ fun DashboardContent(
                     horizontalArrangement = Arrangement.spacedBy(TopwayDimens.Gap),
                 ) {
                     NavigationCard(state.navigation, onNavigation, Modifier.weight(NAVIGATION_WEIGHT).fillMaxHeight())
-                    MediaCard(state.music, onMusic, Modifier.weight(MEDIA_WEIGHT).fillMaxHeight())
+                    MediaCard(state, media, Modifier.weight(MEDIA_WEIGHT).fillMaxHeight())
                 }
             } else {
                 NavigationCard(state.navigation, onNavigation, Modifier.fillMaxWidth().weight(1f))
-                MediaCard(state.music, onMusic, Modifier.fillMaxWidth().weight(1f))
+                MediaCard(state, media, Modifier.fillMaxWidth().weight(1f))
             }
             QuickAccessPanel(
                 appsState = state.apps,
@@ -166,71 +186,219 @@ private fun NavigationCard(shortcut: ExternalShortcut?, onClick: () -> Unit, mod
 }
 
 /**
- * Tarjeta de música. El launcher no lee qué se está reproduciendo (requeriría el permiso
- * especial de acceso a notificaciones), así que no muestra canciones ni carátulas: ofrece
- * abrir la app de música predeterminada, o elegir una si el sistema no tiene ninguna.
+ * Tarjeta de música. Con el acceso a notificaciones concedido muestra lo que publica la app
+ * que suena (título, artista, carátula) y sus controles. Sin acceso, o si no suena nada, es un
+ * acceso directo a la app de música predeterminada. Nunca inventa datos de reproducción.
  */
 @Composable
-private fun MediaCard(music: ExternalShortcut?, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val action = music?.let { stringResource(R.string.media_open, it.label) } ?: stringResource(R.string.media_choose)
-    CardSurface(onClick = onClick, onClickLabel = action, modifier = modifier) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val showAction = maxHeight >= 112.dp
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(TopwayPalette.PanelRaised),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_nav_music),
-                            contentDescription = null,
-                            tint = TopwayPalette.TextSecondary,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column {
+private fun MediaCard(state: HomeUiState, actions: MediaActions, modifier: Modifier = Modifier) {
+    val nowPlaying = state.nowPlaying
+    val openLabel = when {
+        nowPlaying is NowPlayingUiState.Active && nowPlaying.app != null ->
+            stringResource(R.string.media_open, nowPlaying.app.label)
+        state.music != null -> stringResource(R.string.media_open, state.music.label)
+        else -> stringResource(R.string.media_choose)
+    }
+    CardSurface(onClick = actions.onOpen, onClickLabel = openLabel, modifier = modifier) {
+        if (nowPlaying is NowPlayingUiState.Active) {
+            ActiveMedia(nowPlaying, actions)
+        } else {
+            MediaShortcut(
+                music = state.music,
+                status = stringResource(
+                    if (nowPlaying == NowPlayingUiState.Idle) R.string.media_idle else R.string.media_unavailable,
+                ),
+                openLabel = openLabel,
+                onEnableAccess = actions.onEnableAccess
+                    .takeIf { nowPlaying == NowPlayingUiState.NoAccess && state.canRequestMediaAccess },
+            )
+        }
+    }
+}
+
+/** Lo que suena: carátula (o icono de la app), título, artista y controles. */
+@Composable
+private fun ActiveMedia(nowPlaying: NowPlayingUiState.Active, actions: MediaActions) {
+    val track = nowPlaying.track
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val roomy = maxHeight >= MediaRoomyHeight
+        val artSize = if (roomy) (maxHeight * 0.36f).coerceIn(64.dp, 104.dp) else 48.dp
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Artwork(track.art ?: nowPlaying.app?.icon, artSize)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    nowPlaying.app?.let { app ->
                         Text(
-                            text = stringResource(R.string.media_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TopwayPalette.TextPrimary,
-                        )
-                        Text(
-                            text = stringResource(R.string.media_unavailable),
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = app.label,
+                            style = MaterialTheme.typography.labelMedium,
                             color = TopwayPalette.TextSecondary,
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                }
-                if (showAction) {
-                    Row(
-                        modifier = Modifier
-                            .height(TopwayDimens.MinTouchTarget)
-                            .clip(CircleShape)
-                            .background(TopwayPalette.PanelRaised)
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        music?.icon?.let {
-                            Image(it, contentDescription = null, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(10.dp))
-                        }
+                    Text(
+                        text = track.title ?: stringResource(R.string.media_untitled),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TopwayPalette.TextPrimary,
+                        maxLines = if (roomy) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    track.artist?.let { artist ->
                         Text(
-                            text = action,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = TopwayPalette.TextPrimary,
+                            text = artist,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TopwayPalette.TextSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
             }
+            MediaControls(track, actions, Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/** Anterior, reproducir/pausar y siguiente. Los saltos se atenúan si la app no los admite. */
+@Composable
+private fun MediaControls(track: NowPlaying, actions: MediaActions, modifier: Modifier = Modifier) {
+    val playPauseLabel = stringResource(if (track.isPlaying) R.string.media_pause else R.string.media_play)
+    Row(modifier, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+        ControlButton(R.drawable.ic_media_previous, stringResource(R.string.media_previous), track.canSkipPrevious, actions.onPrevious)
+        Pressable(onClick = actions.onPlayPause, onClickLabel = playPauseLabel) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(TopwayPalette.Selected, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(if (track.isPlaying) R.drawable.ic_media_pause else R.drawable.ic_media_play),
+                    contentDescription = playPauseLabel,
+                    tint = TopwayPalette.OnSelected,
+                    modifier = Modifier.size(30.dp),
+                )
+            }
+        }
+        ControlButton(R.drawable.ic_media_next, stringResource(R.string.media_next), track.canSkipNext, actions.onNext)
+    }
+}
+
+@Composable
+private fun ControlButton(icon: Int, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val content = @Composable {
+        Box(Modifier.size(TopwayDimens.MinTouchTarget), contentAlignment = Alignment.Center) {
+            Icon(
+                painterResource(icon),
+                contentDescription = label,
+                tint = TopwayPalette.TextPrimary,
+                modifier = Modifier
+                    .size(28.dp)
+                    .alpha(if (enabled) 1f else DISABLED_ALPHA),
+            )
+        }
+    }
+    if (enabled) Pressable(onClick = onClick, onClickLabel = label) { content() } else content()
+}
+
+/**
+ * Sin lectura de lo que suena: indica el estado y ofrece abrir la app de música. Si el
+ * usuario aún no concedió el acceso, añade la acción para activarlo.
+ */
+@Composable
+private fun MediaShortcut(
+    music: ExternalShortcut?,
+    status: String,
+    openLabel: String,
+    onEnableAccess: (() -> Unit)?,
+) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val showAccess = onEnableAccess != null && maxHeight >= MediaActionMinHeight
+        // Con poco alto se prioriza activar: abrir la app ya lo hace toda la tarjeta.
+        val showOpen = maxHeight >= if (showAccess) MediaRoomyHeight else MediaActionMinHeight
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Artwork(image = null, size = 48.dp)
+                Spacer(Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = stringResource(R.string.media_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TopwayPalette.TextPrimary,
+                    )
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TopwayPalette.TextSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (showOpen) ActionPill(text = openLabel, icon = music?.icon)
+                if (showAccess && onEnableAccess != null) {
+                    Pressable(onClick = onEnableAccess, onClickLabel = stringResource(R.string.media_enable)) {
+                        ActionPill(text = stringResource(R.string.media_enable), highlighted = true)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionPill(text: String, icon: ImageBitmap? = null, highlighted: Boolean = false) {
+    Row(
+        modifier = Modifier
+            .height(TopwayDimens.MinTouchTarget)
+            .clip(CircleShape)
+            .background(if (highlighted) TopwayPalette.Selected else TopwayPalette.PanelRaised)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon?.let {
+            Image(it, contentDescription = null, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(10.dp))
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (highlighted) TopwayPalette.OnSelected else TopwayPalette.TextPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** Carátula o icono de la app; sin imagen, el pictograma de música. */
+@Composable
+private fun Artwork(image: ImageBitmap?, size: Dp) {
+    val shape = RoundedCornerShape(14.dp)
+    if (image != null) {
+        Image(
+            bitmap = image,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(size)
+                .clip(shape),
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(shape)
+                .background(TopwayPalette.PanelRaised),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_nav_music),
+                contentDescription = null,
+                tint = TopwayPalette.TextSecondary,
+                modifier = Modifier.size(size / 2),
+            )
         }
     }
 }
