@@ -1,7 +1,10 @@
 package com.morado.topwaylauncher.ui.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,10 +25,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -55,6 +61,15 @@ private val QuickLabelSpace = 26.dp
 private val MediaRoomyHeight = 172.dp
 private val MediaActionMinHeight = 112.dp
 private const val DISABLED_ALPHA = 0.3f
+
+/** Tinte de la carátula en la tarjeta de música; el fundido acompaña al del fondo. */
+private const val CARD_TINT_ALPHA = 0.16f
+private const val TINT_FADE_MS = 900
+
+/** Alto de la fila de controles más su separación, para calcular el tamaño de la carátula. */
+private val MediaControlsBlock = 68.dp
+private val ArtMinSize = 48.dp
+private val ArtMaxSize = 132.dp
 
 /** Acciones de la tarjeta de música. */
 class MediaActions(
@@ -111,20 +126,32 @@ fun DashboardContent(
     }
 }
 
-/** Superficie de tarjeta pulsable: el fondo escala junto con el contenido al tocarla. */
+/**
+ * Superficie de tarjeta pulsable, de "vidrio": blanco translúcido que deja ver el fondo
+ * ambiental, con un borde fino que la recorta. Sin desenfoque real, que sería costoso en el
+ * procesador de una radio. Con [tint], la parte de arriba toma ese color (la carátula).
+ */
 @Composable
 private fun CardSurface(
     onClick: () -> Unit,
     onClickLabel: String,
     modifier: Modifier = Modifier,
+    tint: Color? = null,
     content: @Composable () -> Unit,
 ) {
+    val animatedTint by animateColorAsState(
+        targetValue = tint?.copy(alpha = CARD_TINT_ALPHA) ?: TopwayPalette.GlassTop,
+        animationSpec = tween(TINT_FADE_MS),
+        label = "cardTint",
+    )
+    val shape = RoundedCornerShape(TopwayDimens.CardRadius)
     Pressable(onClick = onClick, onClickLabel = onClickLabel, modifier = modifier, pressedScale = CARD_PRESSED_SCALE) {
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(TopwayDimens.CardRadius))
-                .background(TopwayPalette.Panel)
+                .clip(shape)
+                .background(Brush.verticalGradient(listOf(animatedTint, TopwayPalette.GlassBottom)))
+                .border(1.dp, TopwayPalette.GlassBorder, shape)
                 .padding(TopwayDimens.CardPadding),
         ) {
             content()
@@ -169,13 +196,13 @@ private fun NavigationCard(shortcut: ExternalShortcut?, onClick: () -> Unit, mod
                     Box(
                         modifier = Modifier
                             .size(56.dp)
-                            .background(TopwayPalette.Selected, CircleShape),
+                            .background(TopwayPalette.Accent, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painterResource(R.drawable.ic_chevron_right),
                             contentDescription = null,
-                            tint = TopwayPalette.OnSelected,
+                            tint = TopwayPalette.OnAccent,
                             modifier = Modifier.size(30.dp),
                         )
                     }
@@ -199,7 +226,8 @@ private fun MediaCard(state: HomeUiState, actions: MediaActions, modifier: Modif
         state.music != null -> stringResource(R.string.media_open, state.music.label)
         else -> stringResource(R.string.media_choose)
     }
-    CardSurface(onClick = actions.onOpen, onClickLabel = openLabel, modifier = modifier) {
+    val tint = (nowPlaying as? NowPlayingUiState.Active)?.track?.ambientColor?.let(::Color)
+    CardSurface(onClick = actions.onOpen, onClickLabel = openLabel, modifier = modifier, tint = tint) {
         if (nowPlaying is NowPlayingUiState.Active) {
             ActiveMedia(nowPlaying, actions)
         } else {
@@ -221,8 +249,9 @@ private fun MediaCard(state: HomeUiState, actions: MediaActions, modifier: Modif
 private fun ActiveMedia(nowPlaying: NowPlayingUiState.Active, actions: MediaActions) {
     val track = nowPlaying.track
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val roomy = maxHeight >= MediaRoomyHeight
-        val artSize = if (roomy) (maxHeight * 0.36f).coerceIn(64.dp, 104.dp) else 48.dp
+        // La carátula ocupa todo el alto que dejan libre los controles: es lo más vistoso.
+        val artSize = (maxHeight - MediaControlsBlock).coerceIn(ArtMinSize, ArtMaxSize)
+        val roomy = artSize >= 88.dp
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Artwork(track.art ?: nowPlaying.app?.icon, artSize)
@@ -270,13 +299,13 @@ private fun MediaControls(track: NowPlaying, actions: MediaActions, modifier: Mo
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .background(TopwayPalette.Selected, CircleShape),
+                    .background(TopwayPalette.Accent, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painterResource(if (track.isPlaying) R.drawable.ic_media_pause else R.drawable.ic_media_play),
                     contentDescription = playPauseLabel,
-                    tint = TopwayPalette.OnSelected,
+                    tint = TopwayPalette.OnAccent,
                     modifier = Modifier.size(30.dp),
                 )
             }
@@ -354,7 +383,7 @@ private fun ActionPill(text: String, icon: ImageBitmap? = null, highlighted: Boo
         modifier = Modifier
             .height(TopwayDimens.MinTouchTarget)
             .clip(CircleShape)
-            .background(if (highlighted) TopwayPalette.Selected else TopwayPalette.PanelRaised)
+            .background(if (highlighted) TopwayPalette.Accent else TopwayPalette.Control)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -365,7 +394,7 @@ private fun ActionPill(text: String, icon: ImageBitmap? = null, highlighted: Boo
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = if (highlighted) TopwayPalette.OnSelected else TopwayPalette.TextPrimary,
+            color = if (highlighted) TopwayPalette.OnAccent else TopwayPalette.TextPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -390,7 +419,7 @@ private fun Artwork(image: ImageBitmap?, size: Dp) {
             modifier = Modifier
                 .size(size)
                 .clip(shape)
-                .background(TopwayPalette.PanelRaised),
+                .background(TopwayPalette.Control),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -414,7 +443,7 @@ private fun ShortcutIcon(shortcut: ExternalShortcut?, fallback: Int, size: Dp) {
             modifier = Modifier
                 .size(size)
                 .clip(RoundedCornerShape(TopwayDimens.ControlRadius))
-                .background(TopwayPalette.PanelRaised),
+                .background(TopwayPalette.Control),
             contentAlignment = Alignment.Center,
         ) {
             Icon(painterResource(fallback), contentDescription = null, tint = TopwayPalette.TextSecondary, modifier = Modifier.size(size * 0.45f))
@@ -434,15 +463,23 @@ private fun QuickAccessPanel(
     onShowAllApps: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val shape = RoundedCornerShape(TopwayDimens.CardRadius)
     BoxWithConstraints(
         modifier
-            .clip(RoundedCornerShape(TopwayDimens.CardRadius))
-            .background(TopwayPalette.Panel)
+            .clip(shape)
+            .background(TopwayPalette.GlassBottom)
+            .border(1.dp, TopwayPalette.GlassBorder, shape)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         val fitting = ((maxWidth - TopwayDimens.QuickSlotWidth) / TopwayDimens.QuickSlotWidth).toInt().coerceAtLeast(0)
         val iconSize = (maxHeight - QuickLabelSpace).coerceIn(36.dp, TopwayDimens.QuickIcon)
-        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+        // Los iconos (y «Todas») se reparten con el mismo espacio entre ellos para que el panel
+        // no quede con un hueco cuando hay pocas apps. Carga y vacío ocupan el espacio con weight.
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             when {
                 appsState is AppsUiState.Loading -> Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = TopwayPalette.TextSecondary, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
@@ -464,7 +501,6 @@ private fun QuickAccessPanel(
                             onClick = { onAppClick(app) },
                         ) { AppIcon(app, iconSize) }
                     }
-                    Spacer(Modifier.weight(1f))
                 }
             }
             QuickSlot(label = stringResource(R.string.quick_all), onClick = onShowAllApps) {
@@ -472,7 +508,7 @@ private fun QuickAccessPanel(
                     modifier = Modifier
                         .size(iconSize)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(TopwayPalette.PanelRaised),
+                        .background(TopwayPalette.Control),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(painterResource(R.drawable.ic_nav_apps), contentDescription = null, tint = TopwayPalette.TextPrimary, modifier = Modifier.size(iconSize * 0.45f))

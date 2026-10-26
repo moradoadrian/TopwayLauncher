@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -35,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.morado.topwaylauncher.R
 import com.morado.topwaylauncher.data.LauncherApp
+import com.morado.topwaylauncher.ui.components.AmbientBackground
 import com.morado.topwaylauncher.ui.components.ClockHeader
 import com.morado.topwaylauncher.ui.components.HomeSection
 import com.morado.topwaylauncher.ui.components.NavRail
@@ -148,7 +149,7 @@ private fun MediaAccessDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.media_access_continue), color = TopwayPalette.Selected)
+                Text(stringResource(R.string.media_access_continue), color = TopwayPalette.AccentLight)
             }
         },
         dismissButton = {
@@ -180,68 +181,71 @@ fun HomeScreen(
     // Los márgenes del sistema (barras, recorte de cámara) se aplican por zona y no a toda la
     // pantalla: así el fondo de la barra llega hasta el borde y solo su contenido se aparta.
     val safe = WindowInsets.safeDrawing
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        contentWindowInsets = WindowInsets(0),
-    ) { innerPadding ->
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            val railWidth = (maxWidth * TopwayDimens.RAIL_WIDTH_FRACTION)
-                .coerceIn(TopwayDimens.RailMinWidth, TopwayDimens.RailMaxWidth)
-            Row(Modifier.fillMaxSize()) {
-                NavRail(
-                    selected = section,
-                    onHome = onHome,
-                    onNavigation = onNavigation,
-                    onMusic = onMusic,
-                    onApps = onApps,
-                    onSettings = onSettings,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .background(TopwayPalette.Panel)
-                        .windowInsetsPadding(safe.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical))
-                        .width(railWidth),
-                )
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .windowInsetsPadding(safe.only(WindowInsetsSides.End + WindowInsetsSides.Vertical))
-                        .padding(
-                            horizontal = TopwayDimens.ScreenPaddingHorizontal,
-                            vertical = TopwayDimens.ScreenPaddingVertical,
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap),
-                ) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        ClockHeader(Modifier.weight(1f, fill = false))
-                        if (section == HomeSection.Apps) {
-                            Spacer(Modifier.weight(1f))
-                            AppsTitle(state.apps)
+    val ambientTint = (state.nowPlaying as? NowPlayingUiState.Active)?.track?.ambientColor?.let(::Color)
+    AmbientBackground(tint = ambientTint, modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            contentWindowInsets = WindowInsets(0),
+        ) { innerPadding ->
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            ) {
+                val railWidth = (maxWidth * TopwayDimens.RAIL_WIDTH_FRACTION)
+                    .coerceIn(TopwayDimens.RailMinWidth, TopwayDimens.RailMaxWidth)
+                Row(Modifier.fillMaxSize()) {
+                    NavRail(
+                        selected = section,
+                        onHome = onHome,
+                        onNavigation = onNavigation,
+                        onMusic = onMusic,
+                        onApps = onApps,
+                        onSettings = onSettings,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .background(TopwayPalette.Rail)
+                            .windowInsetsPadding(safe.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical))
+                            .width(railWidth),
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .windowInsetsPadding(safe.only(WindowInsetsSides.End + WindowInsetsSides.Vertical))
+                            .padding(
+                                horizontal = TopwayDimens.ScreenPaddingHorizontal,
+                                vertical = TopwayDimens.ScreenPaddingVertical,
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap),
+                    ) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            ClockHeader(Modifier.weight(1f, fill = false))
+                            if (section == HomeSection.Apps) {
+                                Spacer(Modifier.weight(1f))
+                                AppsTitle(state.apps)
+                            }
                         }
-                    }
-                    val contentModifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                    when (section) {
-                        HomeSection.Dashboard -> DashboardContent(
-                            state = state,
-                            onNavigation = onNavigation,
-                            media = media,
-                            onAppClick = onAppClick,
-                            onShowAllApps = onApps,
-                            modifier = contentModifier,
-                        )
-                        HomeSection.Apps -> AppsContent(
-                            state = state.apps,
-                            onRetry = onRetry,
-                            onAppClick = onAppClick,
-                            modifier = contentModifier,
-                        )
+                        val contentModifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                        when (section) {
+                            HomeSection.Dashboard -> DashboardContent(
+                                state = state,
+                                onNavigation = onNavigation,
+                                media = media,
+                                onAppClick = onAppClick,
+                                onShowAllApps = onApps,
+                                modifier = contentModifier,
+                            )
+                            HomeSection.Apps -> AppsContent(
+                                state = state.apps,
+                                onRetry = onRetry,
+                                onAppClick = onAppClick,
+                                modifier = contentModifier,
+                            )
+                        }
                     }
                 }
             }

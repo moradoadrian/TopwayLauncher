@@ -103,7 +103,7 @@ private fun DeviceInfoDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close), color = TopwayPalette.Selected) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close), color = TopwayPalette.AccentLight) }
         },
         title = { Text(stringResource(R.string.device_info_title)) },
         text = {

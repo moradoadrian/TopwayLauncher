@@ -87,9 +87,9 @@ private fun RailItem(
     onClick: () -> Unit,
 ) {
     val text = stringResource(label)
-    val tint = if (selected) TopwayPalette.TextPrimary else TopwayPalette.TextSecondary
-    // Indicador sutil: un paso de tono detrás del botón activo, sin color de acento.
-    val background = if (selected) TopwayPalette.PanelRaised else Color.Transparent
+    val tint = if (selected) TopwayPalette.OnAccent else TopwayPalette.TextSecondary
+    // La sección activa es un relleno ciruela con icono y texto blancos (8.9:1).
+    val background = if (selected) TopwayPalette.Accent else Color.Transparent
     Box(
         modifier = Modifier
             .fillMaxWidth()

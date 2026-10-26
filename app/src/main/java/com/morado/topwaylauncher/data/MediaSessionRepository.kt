@@ -112,7 +112,7 @@ class MediaSessionRepository(context: Context) {
     ) : MediaController.Callback() {
         private var state: PlaybackState? = controller.playbackState
         private var metadata: MediaMetadata? = controller.metadata
-        private var art: ImageBitmap? = artOf(metadata)
+        private var art: Artwork? = artOf(metadata)
 
         val isPlaying: Boolean get() = isPlaying(state)
         val title: String? get() = metadata.text(MediaMetadata.METADATA_KEY_TITLE, MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
@@ -125,7 +125,8 @@ class MediaSessionRepository(context: Context) {
                 MediaMetadata.METADATA_KEY_ALBUM_ARTIST,
                 MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE,
             ),
-            art = art,
+            art = art?.image,
+            ambientColor = art?.ambientColor,
             isPlaying = isPlaying,
             canSkipPrevious = state.supports(PlaybackState.ACTION_SKIP_TO_PREVIOUS),
             canSkipNext = state.supports(PlaybackState.ACTION_SKIP_TO_NEXT),
@@ -143,8 +144,14 @@ class MediaSessionRepository(context: Context) {
         }
     }
 
+    /** Carátula lista para pintar y su color ambiental, calculados una vez por pista. */
+    private class Artwork(val image: ImageBitmap, val ambientColor: Int?)
+
     private companion object {
         const val ART_MAX_PX = 256
+
+        // Muestra reducida para el color dominante: basta con unos cientos de píxeles.
+        const val SAMPLE_PX = 24
 
         val ACTIVE_STATES = setOf(
             PlaybackState.STATE_PLAYING,
@@ -165,17 +172,26 @@ class MediaSessionRepository(context: Context) {
             this?.let { metadata -> keys.firstNotNullOfOrNull { metadata.getString(it)?.trim()?.ifEmpty { null } } }
 
         /** Carátula reducida: las apps pueden publicar imágenes grandes y la tarjeta es pequeña. */
-        fun artOf(metadata: MediaMetadata?): ImageBitmap? {
+        fun artOf(metadata: MediaMetadata?): Artwork? {
             val bitmap = metadata?.run {
                 getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                     ?: getBitmap(MediaMetadata.METADATA_KEY_ART)
                     ?: getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
             } ?: return null
             return try {
-                bitmap.fitWithin(ART_MAX_PX).asImageBitmap()
+                Artwork(bitmap.fitWithin(ART_MAX_PX).asImageBitmap(), ambientOf(bitmap))
             } catch (e: RuntimeException) {
                 null
             }
+        }
+
+        fun ambientOf(bitmap: Bitmap): Int? {
+            // Se reduce antes de copiar; la copia en ARGB_8888 permite leer píxeles aunque la app
+            // haya publicado un bitmap de hardware.
+            val sample = bitmap.scale(SAMPLE_PX, SAMPLE_PX).copy(Bitmap.Config.ARGB_8888, false) ?: return null
+            val pixels = IntArray(SAMPLE_PX * SAMPLE_PX)
+            sample.getPixels(pixels, 0, SAMPLE_PX, 0, 0, SAMPLE_PX, SAMPLE_PX)
+            return AmbientColor.dominant(pixels)?.let(AmbientColor::tone)
         }
 
         fun Bitmap.fitWithin(maxPx: Int): Bitmap {

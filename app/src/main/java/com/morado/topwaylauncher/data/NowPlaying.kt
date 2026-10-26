@@ -8,6 +8,8 @@ data class NowPlaying(
     val title: String?,
     val artist: String?,
     val art: ImageBitmap?,
+    /** Color dominante de la carátula, ya suavizado para teñir el fondo; null si no tiene. */
+    val ambientColor: Int?,
     val isPlaying: Boolean,
     val canSkipPrevious: Boolean,
     val canSkipNext: Boolean,

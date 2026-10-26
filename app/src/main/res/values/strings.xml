@@ -18,7 +18,7 @@
 
     <!-- Tarjeta de música -->
     <string name="media_title">Música</string>
-    <string name="media_unavailable">Sin datos de reproducción</string>
+    <string name="media_unavailable">Sin datos de música</string>
     <string name="media_open">Abrir %1$s</string>
     <string name="media_choose">Elegir app de música</string>
     <string name="music_unavailable_message">No hay una app de música predeterminada. Elige una en la lista.</string>

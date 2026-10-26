@@ -162,7 +162,7 @@ private fun PageIndicator(pageCount: Int, currentPage: Int, modifier: Modifier =
                 Modifier
                     .size(8.dp)
                     .background(
-                        color = if (index == currentPage) TopwayPalette.TextPrimary else TopwayPalette.Border,
+                        color = if (index == currentPage) TopwayPalette.AccentLight else TopwayPalette.Inactive,
                         shape = CircleShape,
                     ),
             )

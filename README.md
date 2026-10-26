@@ -9,10 +9,15 @@ distancia y sin depender de root ni de API privadas.
 
 ## Características actuales
 
-- Interfaz multimedia horizontal, minimalista y monocromática, inspirada en la organización
-  de CarPlay (sin copiar su interfaz ni usar recursos de Apple):
-  - **Barra lateral** (~10 % del ancho) con iconos monocromáticos: Inicio, Mapas, Música,
-    Apps y, separado abajo, **Ajustes**. La sección activa se marca con un paso de tono.
+- Interfaz multimedia horizontal y minimalista, inspirada en la organización de CarPlay (sin
+  copiar su interfaz ni usar recursos de Apple), con estilo **«ambiente dinámico» en ciruela**:
+  - **Fondo** grafito con un toque morado y un halo ciruela (`#76305E`). Cuando suena algo
+    con carátula, el fondo y la tarjeta de música se tiñen suavemente de su color dominante,
+    con un fundido lento.
+  - **Tarjetas de vidrio** (blanco translúcido con borde fino), sin desenfoque real para no
+    cargar el procesador de la radio.
+  - **Barra lateral** (~10 % del ancho) con iconos propios: Inicio, Mapas, Música, Apps y,
+    separado abajo, **Ajustes**. La sección activa es un relleno ciruela con icono blanco.
   - **Cabecera** con hora y fecha.
   - **Tarjeta de Navegación** protagonista: abre **Google Maps** con su URL pública de mapa
     (sin destino, sin navegación giro a giro, sin API key y sin permisos de ubicación). Si
@@ -25,7 +30,8 @@ distancia y sin depender de root ni de API privadas.
     caben enteras, y el acceso **Todas** a la lista completa.
   - **Sección Apps**: todas las apps en páginas que se deslizan; columnas, filas y tamaño
     de icono según la pantalla real. Atrás vuelve a Inicio.
-  - Paleta grafito centralizada en `ui/theme/Theme.kt`; el color lo ponen los iconos de las apps.
+  - Paleta centralizada en `ui/theme/Theme.kt`. El ciruela solo se usa como relleno con
+    texto blanco (8,9:1); los detalles finos usan su versión clara `#D58AB9`.
 - Apps ordenadas alfabéticamente (sin distinguir mayúsculas ni acentos).
 - Respuesta táctil al pulsar (iconos y tarjetas se encogen ligeramente).
 - Estados de carga, lista vacía y error con botón *Reintentar*.
@@ -88,10 +94,11 @@ app/src/main/java/com/morado/topwaylauncher/
 │   ├── MediaSessionRepository.kt  Lo que suena y sus controles (sesiones multimedia)
 │   ├── MediaListenerService.kt  Servicio vacío que habilita esa lectura
 │   ├── NowPlaying.kt            Modelo y regla de qué sesión mostrar (con pruebas)
+│   ├── AmbientColor.kt          Color dominante de la carátula (con pruebas)
 │   └── DeviceInfo.kt            Datos del equipo para diagnóstico
 └── ui/
     ├── home/                    HomeScreen, DashboardContent, AppsContent, HomeViewModel
-    ├── components/              NavRail, ClockHeader, AppPager, AppIcon
+    ├── components/              NavRail, ClockHeader, AppPager, AppIcon, AmbientBackground
     └── theme/                   Paleta, dimensiones y tipografía
 res/drawable/ic_nav_*.xml        Iconos monocromáticos propios (sin dependencias)
 docs/
