@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TopwayLauncher</string>
+    <string name="apps_title">Aplicaciones</string>
+    <string name="apps_loading">Cargando aplicaciones…</string>
+    <string name="apps_empty">No se encontraron aplicaciones para mostrar.</string>
+    <string name="apps_error">No se pudo obtener la lista de aplicaciones.</string>
+    <string name="retry">Reintentar</string>
+    <string name="launch_error">No se pudo abrir %1$s</string>
+</resources>

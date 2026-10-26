@@ -1,0 +1,11 @@
+# Finales de línea normalizados en el repositorio
+* text=auto
+
+# Scripts: gradlew debe usar LF para funcionar en Linux/macOS/CI
+gradlew text eol=lf
+*.bat text eol=crlf
+
+# Binarios
+*.jar binary
+*.png binary
+*.webp binary
