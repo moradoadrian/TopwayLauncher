@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,15 +45,29 @@ import com.morado.topwaylauncher.R
 import com.morado.topwaylauncher.data.ExternalShortcut
 import com.morado.topwaylauncher.data.LauncherApp
 import com.morado.topwaylauncher.data.NowPlaying
+import com.morado.topwaylauncher.data.vehicle.VehicleState
 import com.morado.topwaylauncher.ui.components.AppIcon
 import com.morado.topwaylauncher.ui.components.CARD_PRESSED_SCALE
 import com.morado.topwaylauncher.ui.components.Pressable
 import com.morado.topwaylauncher.ui.theme.TopwayDimens
 import com.morado.topwaylauncher.ui.theme.TopwayPalette
+import com.morado.topwaylauncher.ui.vehicle.SpeedCard
+import com.morado.topwaylauncher.ui.vehicle.StatusDot
 
-/** Proporción de las tarjetas en horizontal: navegación protagonista, música secundaria. */
-private const val NAVIGATION_WEIGHT = 0.62f
-private const val MEDIA_WEIGHT = 0.38f
+/** Proporciones en horizontal: velocidad protagonista a la izquierda; mapas y música a la derecha. */
+private const val SPEED_WEIGHT = 0.38f
+private const val SIDE_WEIGHT = 0.62f
+private const val NAVIGATION_WEIGHT = 0.42f
+private const val MEDIA_WEIGHT = 0.58f
+
+/** Con menos alto, navegación y música van una al lado de la otra en lugar de apiladas. */
+private val StackedMinHeight = 260.dp
+
+/** Con menos ancho, la tarjeta de navegación omite el botón (toda la tarjeta ya es pulsable). */
+private val NavigationButtonMinWidth = 280.dp
+
+/** Alto mínimo (sin márgenes) para la versión en columna de la tarjeta de navegación. */
+private val NavigationTallMinHeight = 170.dp
 private val QuickPanelMinHeight = 92.dp
 private val QuickPanelMaxHeight = 128.dp
 private val QuickLabelSpace = 26.dp
@@ -83,12 +98,14 @@ class MediaActions(
 )
 
 /**
- * Pantalla de inicio: tarjeta de navegación, tarjeta de música y accesos rápidos.
+ * Pantalla de inicio: velocidad, navegación, música y accesos rápidos.
  * Todas las medidas salen del espacio disponible (sin posiciones absolutas).
  */
 @Composable
 fun DashboardContent(
     state: HomeUiState,
+    vehicle: State<VehicleState>,
+    onSpeedClick: () -> Unit,
     onNavigation: () -> Unit,
     media: MediaActions,
     onAppClick: (LauncherApp) -> Unit,
@@ -97,7 +114,7 @@ fun DashboardContent(
 ) {
     BoxWithConstraints(modifier) {
         val wide = maxWidth >= maxHeight
-        val quickHeight = (maxHeight * 0.3f).coerceIn(QuickPanelMinHeight, QuickPanelMaxHeight)
+        val quickHeight = (maxHeight * 0.26f).coerceIn(QuickPanelMinHeight, QuickPanelMaxHeight)
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap)) {
             if (wide) {
                 Row(
@@ -106,11 +123,24 @@ fun DashboardContent(
                         .weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(TopwayDimens.Gap),
                 ) {
-                    NavigationCard(state.navigation, onNavigation, Modifier.weight(NAVIGATION_WEIGHT).fillMaxHeight())
-                    MediaCard(state, media, Modifier.weight(MEDIA_WEIGHT).fillMaxHeight())
+                    SpeedCard(vehicle, onSpeedClick, Modifier.weight(SPEED_WEIGHT).fillMaxHeight())
+                    BoxWithConstraints(Modifier.weight(SIDE_WEIGHT).fillMaxHeight()) {
+                        if (maxHeight >= StackedMinHeight) {
+                            Column(verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap)) {
+                                NavigationCard(state.navigation, onNavigation, Modifier.fillMaxWidth().weight(NAVIGATION_WEIGHT))
+                                MediaCard(state, media, Modifier.fillMaxWidth().weight(MEDIA_WEIGHT))
+                            }
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(TopwayDimens.Gap)) {
+                                NavigationCard(state.navigation, onNavigation, Modifier.weight(1f).fillMaxHeight())
+                                MediaCard(state, media, Modifier.weight(1f).fillMaxHeight())
+                            }
+                        }
+                    }
                 }
             } else {
-                NavigationCard(state.navigation, onNavigation, Modifier.fillMaxWidth().weight(1f))
+                SpeedCard(vehicle, onSpeedClick, Modifier.fillMaxWidth().weight(1.2f))
+                NavigationCard(state.navigation, onNavigation, Modifier.fillMaxWidth().weight(0.6f))
                 MediaCard(state, media, Modifier.fillMaxWidth().weight(1f))
             }
             QuickAccessPanel(
@@ -127,9 +157,8 @@ fun DashboardContent(
 }
 
 /**
- * Superficie de tarjeta pulsable, de "vidrio": blanco translúcido que deja ver el fondo
- * ambiental, con un borde fino que la recorta. Sin desenfoque real, que sería costoso en el
- * procesador de una radio. Con [tint], la parte de arriba toma ese color (la carátula).
+ * Superficie de tarjeta pulsable: opaca, con un borde fino. Con [tint], la parte de arriba
+ * toma suavemente ese color (la carátula de lo que suena).
  */
 @Composable
 private fun CardSurface(
@@ -140,7 +169,7 @@ private fun CardSurface(
     content: @Composable () -> Unit,
 ) {
     val animatedTint by animateColorAsState(
-        targetValue = tint?.copy(alpha = CARD_TINT_ALPHA) ?: TopwayPalette.GlassTop,
+        targetValue = tint?.copy(alpha = CARD_TINT_ALPHA) ?: Color.Transparent,
         animationSpec = tween(TINT_FADE_MS),
         label = "cardTint",
     )
@@ -150,8 +179,9 @@ private fun CardSurface(
             Modifier
                 .fillMaxSize()
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(animatedTint, TopwayPalette.GlassBottom)))
-                .border(1.dp, TopwayPalette.GlassBorder, shape)
+                .background(TopwayPalette.Card)
+                .background(Brush.verticalGradient(listOf(animatedTint, Color.Transparent)))
+                .border(1.dp, TopwayPalette.CardBorder, shape)
                 .padding(TopwayDimens.CardPadding),
         ) {
             content()
@@ -160,8 +190,8 @@ private fun CardSurface(
 }
 
 /**
- * Tarjeta protagonista: abre Google Maps (o la app de mapas predeterminada). No dibuja un
- * mapa falso: es un acceso directo, y si no hay app de mapas lo dice en el subtítulo.
+ * Acceso a Google Maps (o a la app de mapas predeterminada). No dibuja un mapa falso: indica
+ * si la app está disponible y, si no lo está, ofrece ir a la lista de aplicaciones.
  */
 @Composable
 private fun NavigationCard(shortcut: ExternalShortcut?, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -170,45 +200,81 @@ private fun NavigationCard(shortcut: ExternalShortcut?, onClick: () -> Unit, mod
         shortcut.isGoogleMaps -> stringResource(R.string.nav_open_google_maps)
         else -> stringResource(R.string.nav_open_app, shortcut.label)
     }
-    CardSurface(onClick = onClick, onClickLabel = subtitle, modifier = modifier) {
+    val clickLabel = if (shortcut == null) stringResource(R.string.nav_show_apps) else subtitle
+    CardSurface(onClick = onClick, onClickLabel = clickLabel, modifier = modifier) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val iconSize = (maxHeight * 0.6f).coerceIn(48.dp, 96.dp)
-            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                ShortcutIcon(shortcut, R.drawable.ic_nav_navigation, iconSize)
-                Spacer(Modifier.width(20.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.nav_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = TopwayPalette.TextPrimary,
-                        maxLines = 1,
-                    )
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = TopwayPalette.TextSecondary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+            if (maxWidth < NavigationButtonMinWidth && maxHeight >= NavigationTallMinHeight) {
+                // Estrecha y alta (junto a la música en pantallas bajas): todo en columna.
+                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+                    ShortcutIcon(shortcut, R.drawable.ic_nav_navigation, 48.dp)
+                    NavigationTexts(shortcut, subtitle, subtitleLines = 2)
+                    NavigationAction(shortcut)
                 }
-                if (shortcut != null) {
+            } else {
+                val iconSize = (maxHeight * 0.55f).coerceIn(40.dp, 72.dp)
+                val showAction = maxWidth >= NavigationButtonMinWidth
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    ShortcutIcon(shortcut, R.drawable.ic_nav_navigation, iconSize)
                     Spacer(Modifier.width(16.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(TopwayPalette.Accent, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_chevron_right),
-                            contentDescription = null,
-                            tint = TopwayPalette.OnAccent,
-                            modifier = Modifier.size(30.dp),
-                        )
+                    NavigationTexts(shortcut, subtitle, subtitleLines = 1, Modifier.weight(1f))
+                    if (showAction) {
+                        Spacer(Modifier.width(12.dp))
+                        NavigationAction(shortcut)
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun NavigationTexts(shortcut: ExternalShortcut?, subtitle: String, subtitleLines: Int, modifier: Modifier = Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = stringResource(R.string.nav_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = TopwayPalette.TextPrimary,
+            maxLines = 1,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TopwayPalette.TextSecondary,
+            maxLines = subtitleLines,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusDot(if (shortcut != null) TopwayPalette.Connected else TopwayPalette.Disconnected)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = stringResource(if (shortcut != null) R.string.nav_available else R.string.nav_not_installed),
+                style = MaterialTheme.typography.labelMedium,
+                color = TopwayPalette.TextSecondary,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** Con app de mapas, la flecha de abrir; sin ella, el acceso a la lista de aplicaciones. */
+@Composable
+private fun NavigationAction(shortcut: ExternalShortcut?) {
+    if (shortcut != null) {
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(TopwayPalette.Accent, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = TopwayPalette.OnAccent,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+    } else {
+        ActionPill(text = stringResource(R.string.nav_show_apps))
     }
 }
 
@@ -467,8 +533,8 @@ private fun QuickAccessPanel(
     BoxWithConstraints(
         modifier
             .clip(shape)
-            .background(TopwayPalette.GlassBottom)
-            .border(1.dp, TopwayPalette.GlassBorder, shape)
+            .background(TopwayPalette.Card)
+            .border(1.dp, TopwayPalette.CardBorder, shape)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         val fitting = ((maxWidth - TopwayDimens.QuickSlotWidth) / TopwayDimens.QuickSlotWidth).toInt().coerceAtLeast(0)

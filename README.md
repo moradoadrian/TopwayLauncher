@@ -1,63 +1,102 @@
-# TopwayLauncher
+# TopwayLauncher · Altima Cockpit
 
-Launcher Android propio para la radio de automóvil **Topway TS7** (placa **SL8141E**),
-hecho con Kotlin y Jetpack Compose. Pensado para pantallas horizontales, legible a
-distancia y sin depender de root ni de API privadas.
+Launcher Android propio para la radio de automóvil **Topway TS7** (placa **SL8141E**), instalada
+en un **Nissan Altima 2007**. Hecho con Kotlin y Jetpack Compose, para pantallas horizontales,
+legible a distancia y sin root ni API privadas.
 
-> **Estado:** prototipo 0.1.0. Funciona como aplicación normal; **todavía no** reemplaza
-> el launcher del sistema. No se ha probado aún en la radio.
+**Altima Cockpit** es su diseño: una interfaz automotriz sobria, inspirada en la instrumentación
+digital y en la organización de CarPlay, sin copiar interfaces, logotipos ni recursos de nadie.
 
-## Características actuales
+![Inicio](docs/capturas/inicio.png)
 
-- Interfaz multimedia horizontal y minimalista, inspirada en la organización de CarPlay (sin
-  copiar su interfaz ni usar recursos de Apple), con estilo **«ambiente dinámico» en ciruela**:
-  - **Fondo** grafito con un toque morado y un halo ciruela (`#76305E`). Cuando suena algo
-    con carátula, el fondo y la tarjeta de música se tiñen suavemente de su color dominante,
-    con un fundido lento.
-  - **Tarjetas de vidrio** (blanco translúcido con borde fino), sin desenfoque real para no
-    cargar el procesador de la radio.
-  - **Barra lateral** (~10 % del ancho) con iconos propios: Inicio, Mapas, Música, Apps y,
-    separado abajo, **Ajustes**. La sección activa es un relleno ciruela con icono blanco.
-  - **Cabecera** con hora y fecha.
-  - **Tarjeta de Navegación** protagonista: abre **Google Maps** con su URL pública de mapa
-    (sin destino, sin navegación giro a giro, sin API key y sin permisos de ubicación). Si
-    Maps no está instalado, usa la app de mapas predeterminada; si no hay ninguna, lo indica.
-  - **Tarjeta de Música**: si el usuario lo permite, muestra lo que suena (app, título,
-    artista y carátula, tal como los publica la app de música) con los controles anterior,
-    reproducir/pausar y siguiente. Si no lo permite, o no suena nada, abre la app de música
-    predeterminada. Tocar la tarjeta abre la app que está sonando.
-  - **Accesos rápidos**: apps recientes (o, al principio, las predeterminadas), solo las que
-    caben enteras, y el acceso **Todas** a la lista completa.
-  - **Sección Apps**: todas las apps en páginas que se deslizan; columnas, filas y tamaño
-    de icono según la pantalla real. Atrás vuelve a Inicio.
-  - Paleta centralizada en `ui/theme/Theme.kt`. El ciruela solo se usa como relleno con
-    texto blanco (8,9:1); los detalles finos usan su versión clara `#D58AB9`.
-- Apps ordenadas alfabéticamente (sin distinguir mayúsculas ni acentos).
-- Respuesta táctil al pulsar (iconos y tarjetas se encogen ligeramente).
-- Estados de carga, lista vacía y error con botón *Reintentar*.
-- Aviso si una aplicación, Maps, la app de música o Ajustes no se pueden abrir.
-- La lista se actualiza al volver a la pantalla (apps instaladas/desinstaladas).
-- **Información del equipo** al mantener pulsada la hora: versión real de Android, API,
-  resolución, densidad, modelo y placa (para confirmar las especificaciones de la radio sin ADB).
-- Modo launcher **preparado y desactivado** (ver [docs/MODO_LAUNCHER.md](docs/MODO_LAUNCHER.md)).
-- **Sin permisos** que se pidan al instalar. El único acceso es opcional (ver abajo).
+> **Estado:** 0.2.0. Funciona como app normal; **todavía no** reemplaza el launcher del sistema.
+> Probado en el emulador. **No se ha probado en la radio ni con un adaptador OBD-II real.**
 
-### Mostrar lo que suena (opcional)
+## Funciones
 
-Leer qué reproduce otra app exige que el usuario dé a TopwayLauncher el **acceso a
-notificaciones**. Es una decisión del usuario, no se activa sola:
+### Implementadas y probadas en el emulador
 
-1. En la tarjeta de Música, tocar **Mostrar lo que suena**. Un diálogo explica para qué se usa.
-2. **Ir a Ajustes** abre la pantalla del sistema; ahí se activa el interruptor de TopwayLauncher
-   y se confirma el aviso de Android.
-3. Al volver, la tarjeta muestra lo que suena.
+- **Identidad Altima Cockpit:** grafito `#0D0F11`, tarjetas opacas `#202428` con borde `#34393F`
+  y rojo de instrumentación `#D83A3A` solo en la aguja, la selección y los botones principales.
+  Paleta centralizada en `ui/theme/Theme.kt`. Sin vidrio, neones ni animaciones permanentes.
+- **Barra lateral (~10 % del ancho):** Inicio, Conducción, Mapas, Música, Apps y, separado,
+  Ajustes. Selección con un testigo rojo fino. Con poca altura se ocultan las etiquetas (los
+  botones siguen accesibles por su descripción), pero nunca se recorta ningún botón.
+- **Cabecera:** hora, fecha local y estado real de **OBD-II** (siempre) y **GPS** (solo si el
+  usuario lo activó y concedió el permiso). Mantener pulsada la hora muestra la información
+  del equipo, útil para diagnosticar la radio.
+- **Tarjeta de velocidad:** velocímetro de 270° dibujado en un único Canvas, con la cifra grande,
+  la unidad, la fuente (`OBD-II`, `GPS` o `DEMO · simulado`) y su estado. Sin fuente muestra
+  **«--»**, nunca 0. Al tocarla se abre el modo Conducción.
+- **Tarjeta de navegación:** abre Google Maps con su URL pública (sin API key ni permisos). Indica
+  si está disponible; si no hay app de mapas, ofrece **Ver aplicaciones**.
+- **Tarjeta de música** (conservada): estado vacío sin inventar datos, apertura de la app de
+  música y, si el usuario concede el acceso a notificaciones, lo que suena con sus controles y el
+  tinte suave de la carátula.
+- **Accesos rápidos:** recientes y, al principio, Maps, música, YouTube, Teléfono y Ajustes
+  (solo los instalados), más **Todas**.
+- **Apps:** cuadrícula paginada (conservada), adaptada al espacio real.
+- **Modo Conducción:** velocidad grande, estado de las fuentes y protocolo OBD detectado, y dos
+  accesos grandes (Navegación y Música). Sin gráficas, sin controles de desarrollo y sin sonidos.
+- **Ajustes del launcher:** acceso a los Ajustes de Android, configuración de OBD-II, GPS
+  opcional y modo demostración (solo en depuración).
+- **Velocidad por GPS (opcional):** `LocationManager`, sin servicios de Google. Probado en el
+  emulador con posiciones simuladas: 30 nudos → 56 km/h; al desactivar la ubicación pasa a «--» y
+  «Sin datos recientes».
 
-El servicio que lo hace posible (`MediaListenerService`) está vacío: no lee, guarda ni envía
-notificaciones; solo habilita la API pública de sesiones multimedia (`MediaSessionManager`).
-Para retirarlo: *Ajustes → Notificaciones → Acceso a notificaciones* (el nombre varía según
-el fabricante) y desactivar TopwayLauncher. La tarjeta vuelve a ser un acceso directo.
+### Implementadas, pendientes de probar con hardware real
 
-## Tecnologías
+- **OBD-II por Bluetooth (ELM327):** conexión, preparación, consulta del PID `01 0D`, timeouts,
+  reconexión y estados de error. Probado con un adaptador simulado en las pruebas unitarias.
+  Detalles en [docs/OBD-II.md](docs/OBD-II.md).
+
+### Pendientes
+
+- Probar en la radio Topway y con un adaptador ELM327 en el Altima.
+- RPM y temperatura del refrigerante: interpretación lista y probada, **no se consultan** hasta
+  validar la velocidad en el vehículo.
+- Modo launcher (preparado y desactivado: [docs/MODO_LAUNCHER.md](docs/MODO_LAUNCHER.md)).
+- Sin mapa integrado, widgets, búsqueda, carpetas ni reordenación de iconos.
+
+| Conducción (demo) | Velocidad por GPS | Ajustes |
+|---|---|---|
+| ![Conducción](docs/capturas/conduccion_demo.png) | ![GPS](docs/capturas/inicio_gps.png) | ![Ajustes](docs/capturas/ajustes.png) |
+
+Capturas del emulador `Topway_1024x600` (1024 × 600, 160 dpi). La velocidad de la primera es
+**simulada** y aparece marcada como `DEMO`; la del GPS viene del proveedor GPS del emulador.
+
+## Reglas sobre los datos del vehículo
+
+- Sin una fuente reciente, la velocidad es **desconocida («--»)**. Nunca se muestra 0 por falta
+  de datos ni el último valor como si fuera actual.
+- Prioridad fija: OBD-II reciente → GPS reciente → demo (solo en depuración) → desconocida. Nunca
+  se promedian ni se mezclan fuentes, y la fuente se muestra siempre.
+- La demostración solo existe en compilaciones de depuración, está desactivada por defecto, se
+  marca en ámbar como `DEMO · simulado` y nunca tiene prioridad sobre datos reales.
+- La velocidad es **informativa** y no sustituye al tablero del vehículo.
+
+## Permisos
+
+| Permiso | Para qué | Cuándo se pide |
+|---|---|---|
+| `BLUETOOTH` (Android ≤ 11) | Conectar con el adaptador OBD-II ya emparejado | Al instalar (permiso normal) |
+| `BLUETOOTH_CONNECT` (Android 12+) | Lo mismo | Al pulsar **Elegir** adaptador en Ajustes |
+| `ACCESS_FINE_LOCATION` | Velocidad del GPS | Al activar **Usar GPS**, tras explicar el motivo |
+| `ACCESS_COARSE_LOCATION` | Android 12+ obliga a pedirlo junto con el anterior | Igual; con solo la aproximada el GPS no se activa y se explica por qué |
+
+- No se piden permisos de escaneo Bluetooth ni de ubicación para Bluetooth: solo se usan
+  dispositivos **ya emparejados** en Android.
+- **Sin permiso de Internet.** Nada se envía a servidores. La ubicación no se guarda ni se
+  registran trayectos: de cada posición solo se toma la velocidad.
+- El acceso a notificaciones de la tarjeta de música sigue siendo opcional y lo concede el
+  usuario en Ajustes de Android (ver más abajo).
+- `ManifestPermissionsTest` falla si alguien añade un permiso que no está en esta lista.
+
+## Requisitos
+
+- Android Studio reciente (probado con la build 2026.1, `AI-261`), JDK 17+ (sirve el JBR incluido).
+- Android SDK Platform 36 y Build-Tools 36.
+- Para OBD-II: adaptador **ELM327 Bluetooth Classic (SPP)**. Los adaptadores solo BLE no se admiten.
 
 | Componente | Versión |
 |---|---|
@@ -67,138 +106,151 @@ el fabricante) y desactivar TopwayLauncher. La tarjeta vuelve a ser un acceso di
 | Jetpack Compose BOM | 2026.05.00 (Material 3) |
 | compileSdk / targetSdk | 36 |
 | minSdk | 23 (Android 6.0) |
-| JDK para compilar | 17 o superior |
 
-Las versiones se eligieron porque ya estaban en la caché local de Android Studio y
-compilan juntas; hay versiones más recientes disponibles (lint las lista como avisos).
+**Dependencias:** las de la versión 0.1.0, sin añadidos en la app. Solo para las pruebas de
+interfaz se añadieron `ui-test-junit4`, `ui-test-manifest`, `androidx.test.ext:junit` 1.3.0 y
+`androidx.test:runner` 1.7.0. No entran en el APK de la radio, salvo `ui-test-manifest`, que
+solo está en la compilación de depuración.
 
-## Requisitos de desarrollo
-
-- Android Studio reciente (probado con la build 2026.1, `AI-261`).
-- Android SDK Platform 36 y Build-Tools 36.
-- JDK 17+ (sirve el JBR que incluye Android Studio).
-- Git.
-
-## Estructura
+## Arquitectura
 
 ```
 app/src/main/java/com/morado/topwaylauncher/
-├── MainActivity.kt              Actividad única con Compose
+├── MainActivity.kt
 ├── data/
-│   ├── AppInfo.kt               Modelos (AppInfo, LauncherApp)
-│   ├── AppListRules.kt          Filtrado/orden puro (con pruebas)
-│   ├── DockRules.kt             Reglas del dock y recientes (con pruebas)
-│   ├── RecentAppsStore.kt       Apps recientes guardadas localmente
-│   ├── AppRepository.kt         Apps, Google Maps, música y Ajustes (API públicas)
-│   ├── ExternalShortcut.kt      Acceso verificado a una app externa
-│   ├── MediaSessionRepository.kt  Lo que suena y sus controles (sesiones multimedia)
-│   ├── MediaListenerService.kt  Servicio vacío que habilita esa lectura
-│   ├── NowPlaying.kt            Modelo y regla de qué sesión mostrar (con pruebas)
-│   ├── AmbientColor.kt          Color dominante de la carátula (con pruebas)
-│   └── DeviceInfo.kt            Datos del equipo para diagnóstico
+│   ├── AppRepository.kt, AppInfo.kt, AppListRules.kt, DockRules.kt, RecentAppsStore.kt
+│   ├── ExternalShortcut.kt, MediaSessionRepository.kt, MediaListenerService.kt
+│   ├── NowPlaying.kt, AmbientColor.kt, DeviceInfo.kt
+│   └── vehicle/                     Velocidad: OBD-II, GPS y selección de fuente
+│       ├── ObdResponseParser.kt     Respuestas ELM327 (puro, con pruebas)
+│       ├── Elm327Session.kt         Comandos permitidos y preparación del adaptador
+│       ├── BluetoothObd.kt          Bluetooth Classic / SPP
+│       ├── ObdConnectionManager.kt  Conexión, consultas, timeouts y reconexión
+│       ├── GpsSpeedSource.kt        Velocidad del GPS
+│       ├── SpeedSelector.kt         Qué fuente mostrar y cuándo un dato es antiguo
+│       ├── VehicleTelemetryRepository.kt, VehicleSettingsStore.kt, VehicleTelemetry.kt
 └── ui/
-    ├── home/                    HomeScreen, DashboardContent, AppsContent, HomeViewModel
-    ├── components/              NavRail, ClockHeader, AppPager, AppIcon, AmbientBackground
-    └── theme/                   Paleta, dimensiones y tipografía
-res/drawable/ic_nav_*.xml        Iconos monocromáticos propios (sin dependencias)
-docs/
-├── PRUEBAS.md                   ADB por Wi-Fi e instalación por USB
-└── MODO_LAUNCHER.md             Activar / revertir el modo launcher
+    ├── home/       HomeScreen, DashboardContent, AppsContent, HomeViewModel
+    ├── vehicle/    VehicleViewModel, SpeedGauge, VehicleStatus (tarjeta e indicadores),
+    │               DriveContent (Conducción), SettingsContent (Ajustes)
+    ├── components/ NavRail, ClockHeader, AppPager, AppIcon, AmbientBackground
+    └── theme/      Paleta, medidas y tipografía Altima Cockpit
 ```
 
-## Compilar el APK
+Un solo `Activity` con Compose y dos ViewModels: `HomeViewModel` (apps, mapas y música) y
+`VehicleViewModel` (velocidad). El estado del vehículo se pasa como `State` y solo lo leen la
+tarjeta de velocidad, la cabecera y Conducción, de modo que un cambio de velocidad no recompone
+la pantalla entera.
+
+## Compilar y probar
 
 ```powershell
-.\gradlew.bat assembleDebug
+.\gradlew.bat assembleDebug                      # APK: app\build\outputs\apk\debug\app-debug.apk
+.\gradlew.bat testDebugUnitTest lintDebug        # Pruebas unitarias y lint
+$env:ANDROID_SERIAL="emulator-5560"              # Elegir el emulador si hay varios conectados
+.\gradlew.bat connectedDebugAndroidTest          # Pruebas de interfaz (necesita emulador)
 ```
 
-APK: `app/build/outputs/apk/debug/app-debug.apk`.
+En Linux/macOS usar `./gradlew`. `local.properties` lo crea Android Studio y no se versiona.
 
-Pruebas y análisis:
+### Resultados (2026-10-27, PC de desarrollo)
 
-```powershell
-.\gradlew.bat testDebugUnitTest lintDebug
-```
+| Comprobación | Resultado |
+|---|---|
+| `assembleDebug` | Correcto |
+| `testDebugUnitTest` | 61 pruebas, 0 fallos (parser OBD, sesión ELM327, gestor de conexión, selector de fuente, permisos, dock, lista de apps, música) |
+| `connectedDebugAndroidTest` | 13 pruebas, 0 fallos, en `Topway_1024x600` (API 35) |
+| `lintDebug` | 0 errores; avisos solo por versiones más nuevas disponibles y una regla de copia de seguridad que ya existía |
 
-En Linux/macOS usar `./gradlew`. Al abrir el proyecto, Android Studio crea `local.properties`
-con la ruta del SDK (no se versiona).
+Las pruebas de interfaz cubren: inicio de la app, velocidad desconocida, valor OBD, demo
+identificada, datos antiguos, GPS visible solo si está activo, mapas ausentes, música vacía,
+navegación entre secciones, recreación de la actividad y barra lateral con poca altura.
 
-## Ejecutar en el emulador desde Android Studio
+### Rendimiento medido (emulador, no la radio)
 
-1. **File → Open** y elegir la carpeta `TopwayLauncher`; esperar a que termine la
-   sincronización de Gradle.
-2. En **Device Manager**, iniciar un emulador. Sirve cualquier imagen con Google Play (trae
-   Google Maps y YouTube Music, que permiten probar las tarjetas). Rotarlo a **horizontal**
-   con los botones de rotación de la barra del emulador; no hace falta cambiar ajustes.
-3. Elegir la configuración **app** y pulsar **Run ▶**. La app se instala y se abre como una
-   app normal (no reemplaza el launcher del emulador).
-4. Para ver el diseño en otras proporciones, redimensionar la ventana del emulador o usar
-   otro perfil de dispositivo (por ejemplo, una tablet de 10" en horizontal).
+| Medición | Resultado |
+|---|---|
+| CPU con la velocidad fija (sin cambios) | 0,0–0,2 % (sin animaciones permanentes) |
+| CPU con la velocidad cambiando cada 2 s (GPS simulado) | 4–5 % |
+| Frames durante 30 s de cambios | 288 frames; p50 17 ms, p90 21 ms (GPU emulada) |
+| Memoria (PSS total) | ~156 MB en el emulador API 35 |
+| GPS en segundo plano | Se libera ~5 s después de salir de la app (verificado con `dumpsys location`) |
 
-Si el emulador deja de responder a los toques o la captura de pantalla sale negra tras
-muchos reinicios de la app, reiniciar el emulador (*Cold Boot*) suele resolverlo: en las
-pruebas ocurrió por un bloqueo del launcher de Pixel del propio emulador, no de esta app.
+**Pendiente en la radio:** las mismas mediciones con `adb shell top` y `dumpsys gfxinfo` (o
+Android Studio Profiler). El emulador usa GPU por software y otro procesador, así que estas
+cifras no predicen el comportamiento del SL8141E.
 
-## Pruebas en la radio
+## Ejecutar en el emulador
 
-Ver [docs/PRUEBAS.md](docs/PRUEBAS.md):
+1. **File → Open** la carpeta `TopwayLauncher` y esperar a que sincronice Gradle.
+2. Crear un dispositivo parecido a la radio en **Device Manager**: tablet de 7" (o *New hardware
+   profile*) con **1024 × 600** y **160 dpi**, imagen API 35 con Google Play, en horizontal. En
+   este equipo existe como `Topway_1024x600`.
+3. Elegir la configuración **app** y pulsar **Run ▶**. Se abre como una app normal.
+4. Para probar la velocidad sin vehículo:
+   - **Demo:** Ajustes → Modo demostración → *Datos simulados* (solo en depuración).
+   - **GPS:** Ajustes → *Usar GPS*, conceder la ubicación precisa y enviar posiciones con
+     velocidad desde *Extended controls → Location* o con
+     `adb emu geo fix -122.084 37.422 5 8 30` (el último valor es la velocidad en nudos).
+   - **Sin datos:** desactivar la ubicación del emulador: la velocidad pasa a «--».
+5. Para ver otras proporciones, redimensionar la ventana o usar otro perfil.
 
-- **A. ADB por Wi-Fi**: solo si la radio tiene *Depuración inalámbrica* (Android 11+).
-- **B. APK por memoria USB**: no requiere ADB; vía recomendada por ahora.
+## Pruebas en la radio y OBD-II
 
-## Compatibilidad conocida y limitaciones
+- Instalación en la radio: [docs/PRUEBAS.md](docs/PRUEBAS.md). Requiere autorización del propietario.
+- Adaptador y vehículo: [docs/OBD-II.md](docs/OBD-II.md#prueba-en-el-vehiculo).
 
-**Confirmado en el PC de desarrollo:** compila, las pruebas unitarias pasan y lint no
-reporta errores.
+### Configurar OBD-II
 
-**Pendiente de confirmar en la radio:**
+1. Emparejar el adaptador en **Ajustes de Android → Bluetooth**.
+2. TopwayLauncher → **Ajustes → OBD-II por Bluetooth → Elegir** (en Android 12+ pide el permiso
+   de Bluetooth) → elegir el adaptador. *Usar OBD-II* se activa solo.
+3. *Consultar cada*: 1 s (por defecto), 2 s o 3 s.
+4. El estado y el protocolo detectado aparecen en Ajustes, en la cabecera y en Conducción.
 
-- Versión de Android y nivel de API reales.
-- Resolución y densidad de pantalla.
-- Arquitectura del procesador.
-- Si existe depuración inalámbrica u opciones de desarrollador accesibles.
-- Si el puerto USB puede trabajar en modo dispositivo para ADB (hoy no se detecta en el PC).
-- Si el firmware permite elegir otro launcher predeterminado.
+### Mostrar lo que suena (opcional)
 
-**Limitaciones del prototipo:**
+Leer qué reproduce otra app exige que el usuario dé a TopwayLauncher el **acceso a
+notificaciones**: en la tarjeta de Música, **Mostrar lo que suena** → **Ir a Ajustes** → activar
+TopwayLauncher. El servicio `MediaListenerService` está vacío: no lee, guarda ni envía
+notificaciones. Se retira en *Ajustes → Notificaciones → Acceso a notificaciones*.
 
-- No reemplaza el launcher del sistema.
-- **Lo que suena depende de la app de música.** Solo aparecen las apps que publican una
-  sesión multimedia estándar (YouTube Music, Spotify y la mayoría de reproductores). Las apps
-  de fábrica de la radio (FM, Bluetooth, USB) pueden no hacerlo; si es así, la tarjeta sigue
-  siendo un acceso directo. Probado solo en el emulador.
-- **El acceso a notificaciones puede no estar disponible en la radio.** En equipos marcados
-  como de poca memoria Android lo bloquea, y algunos fabricantes ocultan esa pantalla (en ese
-  caso el botón no aparece). En Android 13+ las apps instaladas desde un archivo APK pueden
-  tener este ajuste *restringido*: ver [docs/PRUEBAS.md](docs/PRUEBAS.md).
-- Si se retira el acceso con la pantalla de inicio abierta (por ejemplo, por ADB), la
-  tarjeta lo refleja al volver a ella.
-- **Mapas y Música dependen de las apps predeterminadas** del sistema. Si la radio no tiene
-  una app de música elegida (o sus apps de fábrica no se declaran como tales), la tarjeta
-  ofrece elegirla desde la lista de apps.
-- La tarjeta de Navegación es un acceso directo: no hay mapa integrado (no se usa ningún SDK).
-- La cabecera no muestra información contextual (clima, conexión); el espacio está libre.
-- Sin widgets, búsqueda, favoritos fijados, carpetas ni reordenación de iconos.
-- La lista de apps se refresca al volver a la pantalla, no en tiempo real.
-- No se integra con funciones propias de la radio (MCU, FM, cámara, controles de volante).
-- El emulador (Android 15, API 35) no reproduce el sistema de la Topway: versión de Android,
-  rendimiento, resolución y apps de fábrica pueden ser distintos.
+## Limitaciones conocidas
+
+- **No probado en la radio.** Versión de Android, resolución, densidad, rendimiento y Bluetooth
+  del SL8141E están sin confirmar (mantener pulsada la hora los muestra).
+- **OBD-II no probado con hardware.** Se desconoce si el Altima 2007 informa el PID `0D` y con qué
+  protocolo; la app lo detecta y lo indica. Muchos clones de ELM327 son poco fiables.
+- Si el firmware de la radio no ofrece Bluetooth Classic a las apps o limita el acceso a
+  dispositivos emparejados, OBD-II no funcionará; el GPS sigue siendo una alternativa si la radio
+  tiene receptor.
+- Las fuentes solo trabajan con el launcher visible: con Google Maps delante no se lee la
+  velocidad (decisión de consumo; se puede revisar más adelante).
+- La conexión OBD se reinicia al volver a la app (unos segundos para «Conectado»).
+- Lo que suena depende de que la app de música publique una sesión multimedia estándar; el acceso
+  a notificaciones puede estar bloqueado en la radio.
+- Sin mapa integrado: la tarjeta de navegación abre la app externa.
+- La etiqueta de la app sigue siendo *TopwayLauncher* (el nombre que aparece en Ajustes de
+  Android); *Altima Cockpit* es el nombre del diseño. Cambiarlo es una decisión pendiente.
 
 ## Cómo contribuir
 
-1. Abrir un *issue* describiendo el cambio o el problema (incluir versión de Android y
-   modelo si es un fallo en la radio).
+1. Abrir un *issue* describiendo el cambio o el problema (incluir versión de Android y modelo si
+   es un fallo en la radio; para OBD-II, el modelo del adaptador y el protocolo que muestra la app).
 2. Crear una rama desde `main`.
-3. Mantener el estilo existente; ejecutar `.\gradlew.bat assembleDebug testDebugUnitTest lintDebug`.
+3. Mantener el estilo existente y ejecutar `.\gradlew.bat assembleDebug testDebugUnitTest lintDebug`
+   (y `connectedDebugAndroidTest` si cambia la interfaz).
 4. Abrir un *pull request* explicando qué se probó y en qué dispositivo.
 
-No incluir claves de firma, contraseñas ni credenciales.
+No incluir claves de firma, contraseñas, credenciales, direcciones MAC de adaptadores ni ubicaciones.
 
 ## Licencia
 
-Distribuido bajo la licencia [MIT](LICENSE).
+El repositorio incluye una licencia [MIT](LICENSE). **Propuesta pendiente de aprobación** del
+propietario antes de publicar el proyecto.
 
 ## Aviso
 
-Proyecto independiente, sin relación con Topway. No modifica el firmware, no requiere root
-y no cambia ajustes de fábrica.
+Proyecto independiente, sin relación con Topway ni con Nissan. No modifica el firmware, no
+requiere root y no cambia ajustes de fábrica. Las marcas se mencionan solo para identificar el
+equipo y el vehículo. La lectura OBD-II solo envía peticiones de lectura.

@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Primer plano del icono adaptativo (108dp, zona segura central de 66dp). -->
+<!-- Primer plano del icono adaptativo (108dp, zona segura central de 66dp): velocímetro con aguja roja. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#FF4FC3F7"
-        android:pathData="M38,38h14v14h-14z M56,38h14v14h-14z M38,56h14v14h-14z M56,56h14v14h-14z" />
+        android:pathData="M37.03,70.97A24,24 0,1 1,70.97 70.97"
+        android:strokeWidth="5"
+        android:strokeColor="#FFF5F5F5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M54,56L66,44"
+        android:strokeWidth="5"
+        android:strokeColor="#FFD83A3A"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#FFD83A3A"
+        android:pathData="M54,56m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
 </vector>

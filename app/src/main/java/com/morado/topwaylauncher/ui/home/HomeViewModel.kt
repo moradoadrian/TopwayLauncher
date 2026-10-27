@@ -123,6 +123,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openSettings(): Boolean = repository.openSettings()
 
+    fun openBluetoothSettings(): Boolean = repository.openBluetoothSettings()
+
     fun openMediaAccess(): Boolean = repository.openNotificationAccess()
 
     fun playPause() = media.playPause()

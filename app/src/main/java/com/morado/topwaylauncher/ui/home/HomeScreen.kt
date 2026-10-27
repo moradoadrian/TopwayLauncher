@@ -2,8 +2,6 @@ package com.morado.topwaylauncher.ui.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -19,13 +17,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,23 +39,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.morado.topwaylauncher.R
 import com.morado.topwaylauncher.data.LauncherApp
+import com.morado.topwaylauncher.data.vehicle.VehicleState
 import com.morado.topwaylauncher.ui.components.AmbientBackground
 import com.morado.topwaylauncher.ui.components.ClockHeader
 import com.morado.topwaylauncher.ui.components.HomeSection
 import com.morado.topwaylauncher.ui.components.NavRail
 import com.morado.topwaylauncher.ui.theme.TopwayDimens
 import com.morado.topwaylauncher.ui.theme.TopwayPalette
+import com.morado.topwaylauncher.ui.vehicle.DriveContent
+import com.morado.topwaylauncher.ui.vehicle.SettingsRoute
+import com.morado.topwaylauncher.ui.vehicle.VehicleStatusChips
+import com.morado.topwaylauncher.ui.vehicle.VehicleViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
+fun HomeRoute(
+    viewModel: HomeViewModel = viewModel(),
+    vehicleViewModel: VehicleViewModel = viewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Se pasa el State (no su valor) para que solo lo lean las piezas que muestran la velocidad.
+    val vehicle = vehicleViewModel.vehicle.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
@@ -61,10 +74,14 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
     var showMediaAccess by rememberSaveable { mutableStateOf(false) }
 
     // Recarga al volver a primer plano: recoge apps instaladas o desinstaladas mientras tanto.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refresh()
+        // Un permiso pudo cambiar en Ajustes de Android mientras tanto.
+        vehicleViewModel.onPermissionsChanged()
+    }
 
-    // En la lista de apps, Atrás vuelve a Inicio en lugar de cerrar la pantalla.
-    BackHandler(enabled = section == HomeSection.Apps) { section = HomeSection.Dashboard }
+    // Fuera de Inicio, Atrás vuelve a Inicio en lugar de cerrar la pantalla.
+    BackHandler(enabled = section != HomeSection.Dashboard) { section = HomeSection.Dashboard }
 
     fun showMessage(message: String) {
         scope.launch {
@@ -82,7 +99,11 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
     val onNavigation = {
         val navigation = uiState.navigation
         when {
-            navigation == null -> showMessage(resources.getString(R.string.maps_unavailable_message))
+            navigation == null -> {
+                // Sin app de mapas no hay nada que abrir: se ofrece la lista de apps.
+                section = HomeSection.Apps
+                showMessage(resources.getString(R.string.maps_unavailable_message))
+            }
             !viewModel.open(navigation) -> {
                 showMessage(resources.getString(R.string.launch_error, navigation.label))
                 viewModel.refresh()
@@ -118,9 +139,10 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
 
     HomeScreen(
         state = uiState,
+        vehicle = vehicle,
         section = section,
         snackbarHostState = snackbarHostState,
-        onHome = { section = HomeSection.Dashboard },
+        onSection = { section = it },
         onNavigation = onNavigation,
         onMusic = onMusic,
         media = MediaActions(
@@ -130,12 +152,22 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
             onPrevious = viewModel::skipPrevious,
             onNext = viewModel::skipNext,
         ),
-        onApps = { section = HomeSection.Apps },
-        onSettings = {
-            if (!viewModel.openSettings()) showMessage(resources.getString(R.string.settings_error))
-        },
         onRetry = viewModel::refresh,
         onAppClick = onAppClick,
+        settingsContent = { modifier ->
+            SettingsRoute(
+                viewModel = vehicleViewModel,
+                vehicle = vehicle,
+                onSystemSettings = {
+                    if (!viewModel.openSettings()) showMessage(resources.getString(R.string.settings_error))
+                },
+                onBluetoothSettings = {
+                    if (!viewModel.openBluetoothSettings()) showMessage(resources.getString(R.string.settings_bt_error))
+                },
+                showMessage = ::showMessage,
+                modifier = modifier,
+            )
+        },
     )
 }
 
@@ -167,16 +199,16 @@ private fun MediaAccessDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
 @Composable
 fun HomeScreen(
     state: HomeUiState,
+    vehicle: State<VehicleState>,
     section: HomeSection,
     snackbarHostState: SnackbarHostState,
-    onHome: () -> Unit,
+    onSection: (HomeSection) -> Unit,
     onNavigation: () -> Unit,
     onMusic: () -> Unit,
     media: MediaActions,
-    onApps: () -> Unit,
-    onSettings: () -> Unit,
     onRetry: () -> Unit,
     onAppClick: (LauncherApp) -> Unit,
+    settingsContent: @Composable (Modifier) -> Unit,
 ) {
     // Los márgenes del sistema (barras, recorte de cámara) se aplican por zona y no a toda la
     // pantalla: así el fondo de la barra llega hasta el borde y solo su contenido se aparta.
@@ -198,11 +230,12 @@ fun HomeScreen(
                 Row(Modifier.fillMaxSize()) {
                     NavRail(
                         selected = section,
-                        onHome = onHome,
+                        onHome = { onSection(HomeSection.Dashboard) },
+                        onDrive = { onSection(HomeSection.Drive) },
                         onNavigation = onNavigation,
                         onMusic = onMusic,
-                        onApps = onApps,
-                        onSettings = onSettings,
+                        onApps = { onSection(HomeSection.Apps) },
+                        onSettings = { onSection(HomeSection.Settings) },
                         modifier = Modifier
                             .fillMaxHeight()
                             .background(TopwayPalette.Rail)
@@ -220,23 +253,25 @@ fun HomeScreen(
                             ),
                         verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap),
                     ) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            ClockHeader(Modifier.weight(1f, fill = false))
-                            if (section == HomeSection.Apps) {
-                                Spacer(Modifier.weight(1f))
-                                AppsTitle(state.apps)
-                            }
-                        }
+                        Header(state, vehicle, section)
                         val contentModifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
                         when (section) {
                             HomeSection.Dashboard -> DashboardContent(
                                 state = state,
+                                vehicle = vehicle,
+                                onSpeedClick = { onSection(HomeSection.Drive) },
                                 onNavigation = onNavigation,
                                 media = media,
                                 onAppClick = onAppClick,
-                                onShowAllApps = onApps,
+                                onShowAllApps = { onSection(HomeSection.Apps) },
+                                modifier = contentModifier,
+                            )
+                            HomeSection.Drive -> DriveContent(
+                                vehicle = vehicle,
+                                onNavigation = onNavigation,
+                                onMusic = onMusic,
                                 modifier = contentModifier,
                             )
                             HomeSection.Apps -> AppsContent(
@@ -245,10 +280,33 @@ fun HomeScreen(
                                 onAppClick = onAppClick,
                                 modifier = contentModifier,
                             )
+                            HomeSection.Settings -> settingsContent(contentModifier)
                         }
                     }
                 }
             }
         }
     }
+}
+
+/** Hora y fecha a la izquierda; título de la sección y estado de las conexiones a la derecha. */
+@Composable
+private fun Header(state: HomeUiState, vehicle: State<VehicleState>, section: HomeSection) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        ClockHeader(Modifier.weight(1f, fill = false))
+        Spacer(Modifier.weight(1f))
+        when (section) {
+            HomeSection.Apps -> AppsTitle(state.apps)
+            HomeSection.Drive -> SectionTitle(stringResource(R.string.drive_title))
+            HomeSection.Settings -> SectionTitle(stringResource(R.string.settings_title))
+            HomeSection.Dashboard -> Unit
+        }
+        Spacer(Modifier.width(16.dp))
+        VehicleStatusChips(vehicle)
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, color = TopwayPalette.TextPrimary, maxLines = 1)
 }

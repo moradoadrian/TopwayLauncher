@@ -4,6 +4,7 @@
 
     <!-- Barra lateral -->
     <string name="rail_home">Inicio</string>
+    <string name="rail_drive">Conducción</string>
     <string name="rail_navigation">Mapas</string>
     <string name="rail_music">Música</string>
     <string name="rail_apps">Apps</string>
@@ -14,6 +15,9 @@
     <string name="nav_open_google_maps">Abrir Google Maps</string>
     <string name="nav_open_app">Abrir %1$s</string>
     <string name="nav_unavailable">Google Maps no está instalado</string>
+    <string name="nav_available">Disponible</string>
+    <string name="nav_not_installed">No instalado</string>
+    <string name="nav_show_apps">Ver aplicaciones</string>
     <string name="maps_unavailable_message">Google Maps no está instalado y no hay otra app de mapas predeterminada.</string>
 
     <!-- Tarjeta de música -->
@@ -61,4 +65,82 @@
     <string name="device_info_screen">Pantalla</string>
     <string name="device_info_model">Modelo</string>
     <string name="device_info_board">Placa</string>
+
+    <!-- Velocidad (Altima Cockpit) -->
+    <string name="speed_title">Velocidad</string>
+    <string name="speed_unit">km/h</string>
+    <string name="speed_unknown">--</string>
+    <plurals name="speed_desc_known">
+        <item quantity="one">%1$d kilómetro por hora</item>
+        <item quantity="other">%1$d kilómetros por hora</item>
+    </plurals>
+    <string name="speed_desc_unknown">Velocidad no disponible</string>
+    <string name="speed_live">Lectura en vivo</string>
+    <string name="speed_stale">Sin datos recientes</string>
+    <string name="speed_configure">Configura OBD-II o GPS en Ajustes</string>
+    <string name="speed_disclaimer">Informativo: no sustituye al tablero</string>
+    <string name="source_obd">OBD-II</string>
+    <string name="source_gps">GPS</string>
+    <string name="source_demo">DEMO · simulado</string>
+
+    <!-- Estado OBD-II -->
+    <string name="obd_label">OBD-II</string>
+    <string name="obd_disabled">Desactivado</string>
+    <string name="obd_not_configured">Sin adaptador</string>
+    <string name="obd_needs_permission">Falta permiso Bluetooth</string>
+    <string name="obd_bt_unavailable">Sin Bluetooth</string>
+    <string name="obd_bt_off">Bluetooth apagado</string>
+    <string name="obd_connecting">Conectando…</string>
+    <string name="obd_connected">Conectado</string>
+    <string name="obd_unsupported">El vehículo no informa velocidad</string>
+    <string name="obd_err_connect">No se pudo conectar</string>
+    <string name="obd_err_adapter">El adaptador no responde</string>
+    <string name="obd_err_vehicle">El vehículo no responde</string>
+    <string name="obd_err_lost">Conexión perdida</string>
+
+    <!-- Estado GPS -->
+    <string name="gps_label">GPS</string>
+    <string name="gps_disabled">Desactivado</string>
+    <string name="gps_needs_permission">Falta permiso de ubicación</string>
+    <string name="gps_unavailable">Sin receptor GPS</string>
+    <string name="gps_off">Ubicación desactivada</string>
+    <string name="gps_searching">Buscando señal</string>
+    <string name="gps_active">Con señal</string>
+
+    <!-- Modo conducción -->
+    <string name="drive_title">Conducción</string>
+    <string name="drive_navigation">Navegación</string>
+    <string name="drive_music">Música</string>
+
+    <!-- Ajustes del launcher -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_android">Ajustes de Android</string>
+    <string name="settings_android_desc">Wi-Fi, Bluetooth, pantalla y launcher predeterminado.</string>
+    <string name="settings_open">Abrir</string>
+    <string name="settings_status">Estado: %1$s</string>
+    <string name="settings_obd_title">OBD-II por Bluetooth</string>
+    <string name="settings_obd_desc">Lee la velocidad del vehículo con un adaptador ELM327 Bluetooth (perfil serie) ya emparejado en Android. Solo envía peticiones de lectura: nunca borra códigos ni escribe en la computadora del vehículo.</string>
+    <string name="settings_obd_enable">Usar OBD-II</string>
+    <string name="settings_obd_adapter">Adaptador</string>
+    <string name="settings_obd_none">Ninguno elegido</string>
+    <string name="settings_obd_choose">Elegir</string>
+    <string name="settings_obd_interval">Consultar cada</string>
+    <string name="settings_interval_value">%1$d s</string>
+    <string name="settings_obd_protocol">Protocolo: %1$s</string>
+    <string name="settings_bt_settings">Emparejar en Bluetooth</string>
+    <string name="settings_bt_permission_denied">Sin el permiso de Bluetooth no se puede usar el adaptador.</string>
+    <string name="settings_bt_error">No se pudieron abrir los ajustes de Bluetooth.</string>
+    <string name="devices_title">Adaptadores emparejados</string>
+    <string name="devices_empty">No hay dispositivos emparejados. Empareja el adaptador en los ajustes de Bluetooth de Android y vuelve aquí.</string>
+    <string name="settings_gps_title">Velocidad por GPS (opcional)</string>
+    <string name="settings_gps_desc">Usa el receptor GPS cuando no hay datos OBD-II. Necesita el permiso de ubicación; la posición no se guarda ni se envía.</string>
+    <string name="settings_gps_enable">Usar GPS</string>
+    <string name="gps_permission_title">Permiso de ubicación</string>
+    <string name="gps_permission_message">Android solo entrega la velocidad del GPS junto con la ubicación. TopwayLauncher toma la velocidad y descarta la posición: no la guarda, no crea historiales y no la envía a ningún servidor. Solo se usa con la pantalla visible.</string>
+    <string name="gps_permission_continue">Continuar</string>
+    <string name="gps_permission_denied">Sin el permiso de ubicación la velocidad por GPS queda desactivada.</string>
+    <string name="gps_permission_precise">La velocidad necesita la ubicación precisa (GPS). Con la aproximada no se puede calcular.</string>
+    <string name="settings_demo_title">Modo demostración</string>
+    <string name="settings_demo_desc">Solo en compilaciones de depuración. Muestra una velocidad simulada marcada como DEMO para probar la interfaz sin vehículo. Los datos reales siempre tienen prioridad.</string>
+    <string name="settings_demo_enable">Datos simulados</string>
 </resources>

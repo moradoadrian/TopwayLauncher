@@ -132,8 +132,12 @@ se sube al repositorio.
 - **Mantener pulsada la hora** de la cabecera: se abre *Información del equipo* con
   la versión de Android, API, resolución, densidad, modelo y placa. Una foto basta.
 - Si aparecen todas las apps de la radio (radio FM, Bluetooth, música…) y si abrirlas funciona.
-- Si el botón **Ajustes** de la barra lateral abre los Ajustes de la radio. Es imprescindible antes
-  de activar el modo launcher.
+- Si **Ajustes** (barra lateral) → **Ajustes de Android → Abrir** lleva a los Ajustes de la
+  radio. Es imprescindible antes de activar el modo launcher.
+- Con todo desactivado, la tarjeta de velocidad debe mostrar **«--»** y «Configura OBD-II o
+  GPS en Ajustes». Nunca un número.
+- **OBD-II (opcional, con el vehículo detenido y estacionado):** ver
+  [OBD-II.md](OBD-II.md#prueba-en-el-vehiculo).
 - Qué dicen las tarjetas **Navegación** y **Música** (por ejemplo, «Abrir Google Maps» o
   «Google Maps no está instalado») y si al tocarlas se abre la app correcta.
 - Si la hora y la fecha son correctas, y si los iconos se ven de un tamaño cómodo.

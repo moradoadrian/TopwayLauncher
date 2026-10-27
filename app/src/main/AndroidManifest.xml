@@ -3,13 +3,46 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        Sin permisos. Para listar aplicaciones en Android 11+ (API 30+) basta con
-        declarar qué intents se consultan; NO se usa QUERY_ALL_PACKAGES.
+        PERMISOS. Ninguno se concede al instalar salvo BLUETOOTH en Android ≤ 11, que es
+        "normal". Todos se usan solo si el usuario activa la función en Ajustes del launcher.
+
+        - BLUETOOTH (Android ≤ 11) / BLUETOOTH_CONNECT (Android 12+): conectar con un adaptador
+          OBD-II ELM327 YA EMPAREJADO en Android. No se busca ni se empareja nada, así que no se
+          piden BLUETOOTH_SCAN, BLUETOOTH_ADMIN ni ubicación para Bluetooth.
+        - ACCESS_FINE_LOCATION: velocidad del GPS (opcional). Se pide en tiempo de ejecución con
+          una explicación previa. La posición no se guarda ni se envía.
+        - ACCESS_COARSE_LOCATION: Android 12+ obliga a pedirlo junto con el anterior. Por sí
+          solo no basta para la velocidad; la app lo explica si el usuario elige "aproximada".
+
+        No hay permiso de Internet: la app no envía datos a ningún servidor.
+    -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Opcionales: la app se instala y funciona en equipos sin Bluetooth o sin GPS. -->
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+
+    <!--
+        Para listar aplicaciones en Android 11+ (API 30+) basta con declarar qué intents se
+        consultan; NO se usa QUERY_ALL_PACKAGES.
     -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- Teléfono predeterminado, para los accesos rápidos. -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
         </intent>
         <!-- Google Maps: para comprobar si puede abrir su URL pública antes de lanzarla. -->
         <package android:name="com.google.android.apps.maps" />

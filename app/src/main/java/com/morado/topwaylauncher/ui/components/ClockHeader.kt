@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.os.ConfigurationCompat
@@ -87,6 +88,7 @@ fun ClockHeader(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = TopwayPalette.TextSecondary,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 

@@ -42,13 +42,18 @@ class AppRepository(context: Context) {
     }
 
     /**
-     * Paquetes que el sistema usa por defecto para mapas y música. Sirven para llenar los
-     * accesos rápidos antes de que haya recientes. Si hay varias candidatas sin elegir, se omiten.
+     * Paquetes para llenar los accesos rápidos antes de que haya recientes, en este orden:
+     * mapas y música predeterminados, YouTube, teléfono y Ajustes. Solo se muestran los que
+     * estén instalados (el dock los cruza con la lista real de apps); si hay varias candidatas
+     * sin elegir para una categoría, esa se omite.
      */
     suspend fun defaultDockPackages(): List<String> = withContext(Dispatchers.IO) {
-        listOf(Intent.CATEGORY_APP_MAPS, Intent.CATEGORY_APP_MUSIC).mapNotNull { category ->
+        val byCategory = listOf(Intent.CATEGORY_APP_MAPS, Intent.CATEGORY_APP_MUSIC).map { category ->
             resolvePackage(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, category))
         }
+        (byCategory + YOUTUBE_PACKAGE + resolvePackage(Intent(Intent.ACTION_DIAL)) + resolvePackage(Intent(Settings.ACTION_SETTINGS)))
+            .filterNotNull()
+            .distinct()
     }
 
     /**
@@ -113,6 +118,12 @@ class AppRepository(context: Context) {
     fun openSettings(): Boolean {
         val settings = Intent(Settings.ACTION_SETTINGS)
         return resolve(settings) != null && start(settings)
+    }
+
+    /** Abre los ajustes de Bluetooth del sistema, donde se empareja el adaptador OBD-II. */
+    fun openBluetoothSettings(): Boolean {
+        val bluetooth = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+        return resolve(bluetooth) != null && start(bluetooth)
     }
 
     private fun start(intent: Intent): Boolean = try {
@@ -186,6 +197,7 @@ class AppRepository(context: Context) {
     private companion object {
         const val ICON_SIZE_PX = 144
         const val GOOGLE_MAPS_PACKAGE = "com.google.android.apps.maps"
+        const val YOUTUBE_PACKAGE = "com.google.android.youtube"
 
         // URL pública de Google Maps (Maps URLs): abre el mapa sin destino ni navegación.
         val GOOGLE_MAPS_OPEN_URI: Uri = "https://www.google.com/maps/@?api=1&map_action=map".toUri()
