@@ -132,6 +132,12 @@
     <string name="settings_bt_error">No se pudieron abrir los ajustes de Bluetooth.</string>
     <string name="devices_title">Adaptadores emparejados</string>
     <string name="devices_empty">No hay dispositivos emparejados. Empareja el adaptador en los ajustes de Bluetooth de Android y vuelve aquí.</string>
+    <string name="settings_vehicle_title">Vehículo</string>
+    <string name="settings_vehicle_desc">Marca y modelo que se muestran en Inicio y en el modo Conducción. Es solo texto: no se usan logotipos de fabricantes.</string>
+    <string name="settings_vehicle_brand">Marca</string>
+    <string name="settings_vehicle_brand_hint">Nissan</string>
+    <string name="settings_vehicle_model">Modelo</string>
+    <string name="settings_vehicle_model_hint">Altima 2007</string>
     <string name="settings_gps_title">Velocidad por GPS (opcional)</string>
     <string name="settings_gps_desc">Usa el receptor GPS cuando no hay datos OBD-II. Necesita el permiso de ubicación; la posición no se guarda ni se envía.</string>
     <string name="settings_gps_enable">Usar GPS</string>

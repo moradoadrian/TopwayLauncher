@@ -16,7 +16,12 @@ data class VehicleSettings(
     val gpsEnabled: Boolean = false,
     /** Solo tiene efecto en compilaciones de depuración. */
     val demoEnabled: Boolean = false,
+    val brand: String = "",
+    val model: String = "",
 ) {
+    /** Lo que se muestra en Inicio y en Conducción, o null si el usuario no lo escribió. */
+    val vehicleTitle: String? get() = VehicleIdentity.title(brand, model)
+
     companion object {
         const val DEFAULT_POLL_MS = 1_000L
         val POLL_OPTIONS_MS = listOf(1_000L, 2_000L, 3_000L)
@@ -40,6 +45,8 @@ class VehicleSettingsStore(context: Context) {
             putLong(KEY_POLL_MS, value.pollIntervalMs)
             putBoolean(KEY_GPS_ENABLED, value.gpsEnabled)
             putBoolean(KEY_DEMO_ENABLED, value.demoEnabled)
+            putString(KEY_BRAND, value.brand)
+            putString(KEY_MODEL, value.model)
         }
     }
 
@@ -51,6 +58,8 @@ class VehicleSettingsStore(context: Context) {
             .takeIf { it in VehicleSettings.POLL_OPTIONS_MS } ?: VehicleSettings.DEFAULT_POLL_MS,
         gpsEnabled = prefs.getBoolean(KEY_GPS_ENABLED, false),
         demoEnabled = prefs.getBoolean(KEY_DEMO_ENABLED, false),
+        brand = VehicleIdentity.sanitize(prefs.getString(KEY_BRAND, null).orEmpty()),
+        model = VehicleIdentity.sanitize(prefs.getString(KEY_MODEL, null).orEmpty()),
     )
 
     private companion object {
@@ -61,5 +70,7 @@ class VehicleSettingsStore(context: Context) {
         const val KEY_POLL_MS = "poll_ms"
         const val KEY_GPS_ENABLED = "gps_enabled"
         const val KEY_DEMO_ENABLED = "demo_enabled"
+        const val KEY_BRAND = "brand"
+        const val KEY_MODEL = "model"
     }
 }

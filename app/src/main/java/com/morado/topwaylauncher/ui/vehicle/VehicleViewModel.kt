@@ -9,6 +9,7 @@ import com.morado.topwaylauncher.data.vehicle.BluetoothObd
 import com.morado.topwaylauncher.data.vehicle.GpsSpeedSource
 import com.morado.topwaylauncher.data.vehicle.ObdConnectionManager
 import com.morado.topwaylauncher.data.vehicle.PairedDevice
+import com.morado.topwaylauncher.data.vehicle.VehicleIdentity
 import com.morado.topwaylauncher.data.vehicle.VehicleSettings
 import com.morado.topwaylauncher.data.vehicle.VehicleSettingsStore
 import com.morado.topwaylauncher.data.vehicle.VehicleState
@@ -62,6 +63,10 @@ class VehicleViewModel(application: Application) : AndroidViewModel(application)
     fun setGpsEnabled(enabled: Boolean) = store.update { it.copy(gpsEnabled = enabled) }
 
     fun setDemoEnabled(enabled: Boolean) = store.update { it.copy(demoEnabled = enabled) }
+
+    fun setBrand(brand: String) = store.update { it.copy(brand = VehicleIdentity.sanitize(brand)) }
+
+    fun setModel(model: String) = store.update { it.copy(model = VehicleIdentity.sanitize(model)) }
 
     /** Tras conceder o retirar un permiso, las fuentes vuelven a comprobarlo. */
     fun onPermissionsChanged() = permissionsVersion.update { it + 1 }

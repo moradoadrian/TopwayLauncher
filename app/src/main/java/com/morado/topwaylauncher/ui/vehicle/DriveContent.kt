@@ -27,6 +27,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.morado.topwaylauncher.R
 import com.morado.topwaylauncher.data.vehicle.GpsStatus
 import com.morado.topwaylauncher.data.vehicle.ObdStatus
@@ -50,17 +51,18 @@ fun DriveContent(
     onNavigation: () -> Unit,
     onMusic: () -> Unit,
     modifier: Modifier = Modifier,
+    vehicleName: String? = null,
 ) {
     BoxWithConstraints(modifier) {
         if (maxWidth >= maxHeight) {
             Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(TopwayDimens.Gap)) {
                 SpeedCard(vehicle, onClick = null, Modifier.weight(GAUGE_WEIGHT).fillMaxHeight(), showDisclaimer = true)
-                DriveSide(vehicle, onNavigation, onMusic, Modifier.weight(SIDE_WEIGHT).fillMaxHeight())
+                DriveSide(vehicle, vehicleName, onNavigation, onMusic, Modifier.weight(SIDE_WEIGHT).fillMaxHeight())
             }
         } else {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap)) {
                 SpeedCard(vehicle, onClick = null, Modifier.weight(1f).fillMaxWidth(), showDisclaimer = true)
-                DriveSide(vehicle, onNavigation, onMusic, Modifier.weight(1f).fillMaxWidth())
+                DriveSide(vehicle, vehicleName, onNavigation, onMusic, Modifier.weight(1f).fillMaxWidth())
             }
         }
     }
@@ -69,20 +71,24 @@ fun DriveContent(
 @Composable
 private fun DriveSide(
     vehicle: State<VehicleState>,
+    vehicleName: String?,
     onNavigation: () -> Unit,
     onMusic: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap)) {
-        SourcesPanel(vehicle, Modifier.fillMaxWidth())
+        SourcesPanel(vehicle, vehicleName, Modifier.fillMaxWidth())
         DriveButton(R.drawable.ic_nav_navigation, R.string.drive_navigation, onNavigation, Modifier.fillMaxWidth().weight(1f))
         DriveButton(R.drawable.ic_nav_music, R.string.drive_music, onMusic, Modifier.fillMaxWidth().weight(1f))
     }
 }
 
-/** Estado real de cada fuente. El GPS solo aparece si el usuario lo activó. */
+/**
+ * Estado real de cada fuente, encabezado por el vehículo si el usuario lo configuró. El GPS
+ * solo aparece si el usuario lo activó.
+ */
 @Composable
-private fun SourcesPanel(vehicle: State<VehicleState>, modifier: Modifier = Modifier) {
+private fun SourcesPanel(vehicle: State<VehicleState>, vehicleName: String?, modifier: Modifier = Modifier) {
     val state = vehicle.value
     val shape = RoundedCornerShape(TopwayDimens.CardRadius)
     Column(
@@ -93,6 +99,15 @@ private fun SourcesPanel(vehicle: State<VehicleState>, modifier: Modifier = Modi
             .padding(horizontal = TopwayDimens.CardPadding, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        if (vehicleName != null) {
+            Text(
+                text = vehicleName,
+                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 2.sp),
+                color = TopwayPalette.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         val protocol = (state.obd as? ObdStatus.Connected)?.protocol
         SourceLine(stringResource(R.string.obd_label), obdLabel(state.obd), protocol)
         if (state.gps != GpsStatus.Disabled) {

@@ -39,7 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,6 +69,7 @@ fun HomeRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // Se pasa el State (no su valor) para que solo lo lean las piezas que muestran la velocidad.
     val vehicle = vehicleViewModel.vehicle.collectAsStateWithLifecycle()
+    val vehicleSettings by vehicleViewModel.settings.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
@@ -140,6 +143,7 @@ fun HomeRoute(
     HomeScreen(
         state = uiState,
         vehicle = vehicle,
+        vehicleName = vehicleSettings.vehicleTitle,
         section = section,
         snackbarHostState = snackbarHostState,
         onSection = { section = it },
@@ -209,6 +213,8 @@ fun HomeScreen(
     onRetry: () -> Unit,
     onAppClick: (LauncherApp) -> Unit,
     settingsContent: @Composable (Modifier) -> Unit,
+    /** Marca y modelo escritos en Ajustes; null si no se configuraron. */
+    vehicleName: String? = null,
 ) {
     // Los márgenes del sistema (barras, recorte de cámara) se aplican por zona y no a toda la
     // pantalla: así el fondo de la barra llega hasta el borde y solo su contenido se aparta.
@@ -253,7 +259,7 @@ fun HomeScreen(
                             ),
                         verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap),
                     ) {
-                        Header(state, vehicle, section)
+                        Header(state, vehicle, vehicleName, section)
                         val contentModifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -270,6 +276,7 @@ fun HomeScreen(
                             )
                             HomeSection.Drive -> DriveContent(
                                 vehicle = vehicle,
+                                vehicleName = vehicleName,
                                 onNavigation = onNavigation,
                                 onMusic = onMusic,
                                 modifier = contentModifier,
@@ -289,9 +296,12 @@ fun HomeScreen(
     }
 }
 
-/** Hora y fecha a la izquierda; título de la sección y estado de las conexiones a la derecha. */
+/**
+ * Hora y fecha a la izquierda; título de la sección (en Inicio, el vehículo si se configuró) y
+ * estado de las conexiones a la derecha.
+ */
 @Composable
-private fun Header(state: HomeUiState, vehicle: State<VehicleState>, section: HomeSection) {
+private fun Header(state: HomeUiState, vehicle: State<VehicleState>, vehicleName: String?, section: HomeSection) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         ClockHeader(Modifier.weight(1f, fill = false))
         Spacer(Modifier.weight(1f))
@@ -299,11 +309,23 @@ private fun Header(state: HomeUiState, vehicle: State<VehicleState>, section: Ho
             HomeSection.Apps -> AppsTitle(state.apps)
             HomeSection.Drive -> SectionTitle(stringResource(R.string.drive_title))
             HomeSection.Settings -> SectionTitle(stringResource(R.string.settings_title))
-            HomeSection.Dashboard -> Unit
+            HomeSection.Dashboard -> if (vehicleName != null) VehicleName(vehicleName)
         }
         Spacer(Modifier.width(16.dp))
         VehicleStatusChips(vehicle)
     }
+}
+
+/** Rótulo sobrio, como el de un cuadro de instrumentos: mayúsculas espaciadas en gris. */
+@Composable
+private fun VehicleName(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 2.sp),
+        color = TopwayPalette.TextSecondary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable

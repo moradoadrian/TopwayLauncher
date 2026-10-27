@@ -21,9 +21,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -38,9 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -116,6 +124,8 @@ fun SettingsRoute(
             }
         },
         onDemoEnabled = viewModel::setDemoEnabled,
+        onBrand = viewModel::setBrand,
+        onModel = viewModel::setModel,
         modifier = modifier,
     )
 
@@ -169,9 +179,33 @@ fun SettingsContent(
     onPollInterval: (Long) -> Unit,
     onGpsEnabled: (Boolean) -> Unit,
     onDemoEnabled: (Boolean) -> Unit,
+    onBrand: (String) -> Unit,
+    onModel: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state = vehicle.value
+    val identity = @Composable {
+        SettingsCard(stringResource(R.string.settings_vehicle_title), stringResource(R.string.settings_vehicle_desc)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                VehicleField(
+                    label = stringResource(R.string.settings_vehicle_brand),
+                    placeholder = stringResource(R.string.settings_vehicle_brand_hint),
+                    value = settings.brand,
+                    onChange = onBrand,
+                    imeAction = ImeAction.Next,
+                    modifier = Modifier.weight(1f),
+                )
+                VehicleField(
+                    label = stringResource(R.string.settings_vehicle_model),
+                    placeholder = stringResource(R.string.settings_vehicle_model_hint),
+                    value = settings.model,
+                    onChange = onModel,
+                    imeAction = ImeAction.Done,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
     val android = @Composable {
         SettingsCard(stringResource(R.string.settings_android), stringResource(R.string.settings_android_desc)) {
             PillButton(stringResource(R.string.settings_open), highlighted = true, onClick = onSystemSettings)
@@ -225,6 +259,7 @@ fun SettingsContent(
                     verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap),
                 ) {
                     android()
+                    identity()
                     gps()
                     demo()
                 }
@@ -232,6 +267,7 @@ fun SettingsContent(
         } else {
             Column(scroll, verticalArrangement = Arrangement.spacedBy(TopwayDimens.Gap)) {
                 android()
+                identity()
                 obd()
                 gps()
                 demo()
@@ -282,6 +318,43 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
             ),
         )
     }
+}
+
+@Composable
+private fun VehicleField(
+    label: String,
+    placeholder: String,
+    value: String,
+    onChange: (String) -> Unit,
+    imeAction: ImeAction,
+    modifier: Modifier = Modifier,
+) {
+    val focus = LocalFocusManager.current
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(label) },
+        placeholder = { Text(placeholder) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = imeAction),
+        keyboardActions = KeyboardActions(
+            onNext = { focus.moveFocus(FocusDirection.Next) },
+            onDone = { focus.clearFocus() },
+        ),
+        textStyle = MaterialTheme.typography.bodyLarge,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TopwayPalette.TextPrimary,
+            unfocusedTextColor = TopwayPalette.TextPrimary,
+            focusedBorderColor = TopwayPalette.Accent,
+            unfocusedBorderColor = TopwayPalette.Border,
+            focusedLabelColor = TopwayPalette.AccentLight,
+            unfocusedLabelColor = TopwayPalette.TextSecondary,
+            focusedPlaceholderColor = TopwayPalette.TextSecondary,
+            unfocusedPlaceholderColor = TopwayPalette.TextSecondary,
+            cursorColor = TopwayPalette.Accent,
+        ),
+        modifier = modifier.heightIn(min = TopwayDimens.MinTouchTarget),
+    )
 }
 
 @Composable
